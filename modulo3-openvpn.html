@@ -89,7 +89,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Come funziona <span style={{ color: MODULE_COLOR }}>SSL/TLS</span> per le VPN
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <Box type="info" title="SSL/TLS VPN">
                             Utilizza il protocollo <strong>TLS</strong> (successore di SSL) per creare un tunnel crittografato.
@@ -190,7 +190,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     <span style={{ color: MODULE_COLOR }}>OpenVPN</span>: architettura
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <Box type="info" title="Cos'è OpenVPN?">
                             Software open-source che implementa una VPN SSL/TLS. Può operare in modalità
@@ -274,7 +274,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Configurazione <span style={{ color: MODULE_COLOR }}>OpenVPN Server</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }} className="slide-grid">
                     <Code title="server.conf">
 {`# Porta e protocollo
 port 1194
@@ -357,7 +357,7 @@ verb 3`}</Code>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Certificati e <span style={{ color: MODULE_COLOR }}>PKI</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <svg viewBox="0 0 400 320" style={{ width: '100%', maxWidth: '400px' }}>
                             <text x="200" y="25" textAnchor="middle" fill={colors.text} fontSize="14" fontWeight="700" fontFamily="Space Grotesk">Infrastruttura PKI OpenVPN</text>
@@ -435,7 +435,7 @@ openvpn --genkey secret ta.key`}</Code>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Gestione certificati e <span style={{ color: colors.danger }}>revoca</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <Box type="warn" title="Quando revocare?">
                             <ul style={{ listStyle: 'none', padding: 0 }}>
@@ -468,7 +468,7 @@ crl-verify /etc/openvpn/crl.pem`}</Code>
                             { step: '5', label: 'Scadenza/Revoca', desc: 'Raggiunge la scadenza o viene revocato via CRL', color: colors.danger }
                         ].map((item, i) => (
                             <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', marginBottom: '14px' }}>
-                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `${item.color}20`, border: `2px solid ${item.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: item.color, fontWeight: 700, fontSize: '14px' }}>{item.step}</div>
+                                <div style={{ width: 'clamp(28px, 3vw, 36px)', height: 'clamp(28px, 3vw, 36px)', borderRadius: '50%', background: `${item.color}20`, border: `2px solid ${item.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: item.color, fontWeight: 700, fontSize: 'clamp(12px, 1.2vw, 16px)' }}>{item.step}</div>
                                 <div>
                                     <div style={{ color: item.color, fontWeight: 700, fontSize: 'clamp(13px, 1.2vw, 16px)' }}>{item.label}</div>
                                     <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.desc}</div>
@@ -585,7 +585,7 @@ verb 3`;
                         ))}
                     </div>
 
-                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }} className="slide-grid">
                         {/* Settings */}
                         <div style={{ background: colors.bgCard, borderRadius: '16px', padding: 'clamp(16px, 1.5vw, 24px)', border: `1px solid ${colors.border}` }}>
                             <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(15px, 1.4vw, 20px)', marginBottom: '16px' }}>Parametri</h3>

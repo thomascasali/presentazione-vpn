@@ -127,7 +127,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Cos'è una <span style={{ color: MODULE_COLOR }}>VPN</span>?
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <Glow>
                             <div style={{ fontSize: '36px', marginBottom: '12px' }}>🛣️</div>
@@ -195,7 +195,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Perché serve? <span style={{ color: colors.danger }}>Minacce su rete pubblica</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }} className="slide-grid">
                     {[
                         { icon: '👁️', title: 'Packet Sniffing', desc: 'Un attaccante sulla stessa rete cattura il traffico in chiaro: password, email, dati sensibili sono visibili.', color: colors.danger },
                         { icon: '🎭', title: 'Man-in-the-Middle', desc: 'L\'attaccante si posiziona tra client e server, intercettando e potenzialmente modificando i dati in transito.', color: colors.warn },
@@ -211,7 +211,7 @@
                             padding: 'clamp(16px, 1.5vw, 22px)',
                             transition: 'all 0.3s'
                         }}>
-                            <div style={{ fontSize: '32px', marginBottom: '10px' }}>{item.icon}</div>
+                            <div style={{ fontSize: 'clamp(24px, 3vw, 36px)', marginBottom: '10px' }}>{item.icon}</div>
                             <h3 style={{ color: item.color, fontSize: 'clamp(14px, 1.3vw, 19px)', fontWeight: 700, marginBottom: '8px' }}>{item.title}</h3>
                             <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>{item.desc}</p>
                         </div>
@@ -225,7 +225,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Concetti <span style={{ color: MODULE_COLOR }}>chiave</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <Glow color={MODULE_COLOR}>
                         <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🚇 Tunneling</h3>
                         <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
@@ -272,10 +272,10 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Tipi di <span style={{ color: MODULE_COLOR }}>VPN</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     {/* Site-to-Site */}
                     <div style={{ background: colors.bgCard, border: `1px solid ${colors.accentAlt}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
-                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏢↔️🏢</div>
+                        <div style={{ fontSize: 'clamp(28px, 4vw, 44px)', marginBottom: '12px' }}>🏢↔️🏢</div>
                         <h3 style={{ color: colors.accentAlt, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Site-to-Site</h3>
                         <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
                             Collega <strong style={{ color: colors.text }}>due reti intere</strong> (es. sede centrale e filiale) attraverso Internet.
@@ -284,7 +284,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                         <Box type="tip" title="Caso d'uso">
                             Azienda con sede a Milano e filiale a Roma: i dipendenti accedono alle risorse come se fossero sulla stessa LAN.
                         </Box>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%', maxWidth: '500px' }}>
                             <rect x="10" y="20" width="100" height="80" rx="10" fill={`${colors.accentAlt}10`} stroke={colors.accentAlt} strokeWidth="1.5" />
                             <text x="60" y="55" textAnchor="middle" fill={colors.text} fontSize="18">🏢</text>
                             <text x="60" y="80" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Sede A</text>
@@ -298,7 +298,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
 
                     {/* Remote Access */}
                     <div style={{ background: colors.bgCard, border: `1px solid ${MODULE_COLOR}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
-                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>💻→🏢</div>
+                        <div style={{ fontSize: 'clamp(28px, 4vw, 44px)', marginBottom: '12px' }}>💻→🏢</div>
                         <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Remote Access</h3>
                         <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
                             Un <strong style={{ color: colors.text }}>singolo utente</strong> si connette alla rete aziendale da remoto.
@@ -307,7 +307,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                         <Box type="tip" title="Caso d'uso">
                             Dipendente in smart working che accede al server aziendale da casa tramite il client VPN.
                         </Box>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%', maxWidth: '500px' }}>
                             <text x="40" y="35" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
                             <text x="40" y="55" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Casa</text>
                             <text x="40" y="80" textAnchor="middle" fill={colors.text} fontSize="18">📱</text>
@@ -323,7 +323,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
 
                     {/* Client-to-Client */}
                     <div style={{ background: colors.bgCard, border: `1px solid ${colors.purple}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
-                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>💻↔️💻</div>
+                        <div style={{ fontSize: 'clamp(28px, 4vw, 44px)', marginBottom: '12px' }}>💻↔️💻</div>
                         <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Client-to-Client (Mesh)</h3>
                         <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
                             Connessione diretta <strong style={{ color: colors.text }}>peer-to-peer</strong> tra dispositivi.
@@ -332,7 +332,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                         <Box type="tip" title="Caso d'uso">
                             Team distribuito che condivide risorse direttamente tra i propri dispositivi senza server centrale.
                         </Box>
-                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%', maxWidth: '500px' }}>
                             <text x="60" y="40" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
                             <text x="200" y="110" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
                             <text x="340" y="40" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
@@ -362,7 +362,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                         [<strong style={{ color: colors.textMuted }}>L2TP/IPsec</strong>, 'Data Link (L2)', 'Via IPsec', '⭐⭐⭐', 'Legacy, sostituito da IKEv2']
                     ]}
                 />
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '20px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px', marginTop: '20px' }} className="slide-grid">
                     <Box type="success" title="Moderni e consigliati">
                         <strong>WireGuard</strong>: il più veloce, codice minimale (~4000 righe), crittografia moderna.<br/>
                         <strong>OpenVPN</strong>: maturo, flessibile, ottimo per scenari complessi.<br/>
@@ -429,7 +429,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     VPN vs <span style={{ color: colors.danger }}>Senza VPN</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div style={{ background: colors.bgCard, border: `1px solid ${colors.danger}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
                         <h3 style={{ color: colors.danger, fontSize: 'clamp(18px, 1.7vw, 26px)', fontWeight: 700, marginBottom: '20px' }}>❌ Senza VPN</h3>
                         {[
@@ -561,7 +561,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                     </div>
 
                     {sc && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }} className="slide-grid">
                             {/* Pacchetto originale */}
                             <div style={{
                                 background: colors.bgCard,
@@ -788,7 +788,7 @@ Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Best Practices e <span style={{ color: MODULE_COLOR }}>Riepilogo</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
                     <Box type="success" title="Cosa fare">
                         <ul style={{ listStyle: 'none', padding: 0 }}>
                             {[

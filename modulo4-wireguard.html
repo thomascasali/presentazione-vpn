@@ -141,7 +141,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Configurazione <span style={{ color: MODULE_COLOR }}>WireGuard</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '20px' }} className="slide-grid">
                     <div>
                         <Code title="1. Generazione chiavi">
 {`# Server
@@ -208,7 +208,7 @@ wg show`}</Code>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Stack <span style={{ color: MODULE_COLOR }}>crittografico</span> WireGuard
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         {[
                             { name: 'Curve25519', role: 'Key Exchange (ECDH)', desc: 'Scambio chiavi ellittico, 128 bit di sicurezza effettiva. Veloce e resistente a timing attacks.', color: MODULE_COLOR },
@@ -230,7 +230,7 @@ wg show`}</Code>
                         ))}
                     </div>
                     <div>
-                        <svg viewBox="0 0 400 320" style={{ width: '100%', maxWidth: '400px' }}>
+                        <svg viewBox="0 0 400 320" style={{ width: '100%', maxWidth: 'clamp(300px, 40vw, 500px)' }}>
                             <text x="200" y="25" textAnchor="middle" fill={colors.text} fontSize="14" fontWeight="700" fontFamily="Space Grotesk">Noise Protocol (1-RTT Handshake)</text>
 
                             {/* Initiator */}
@@ -274,7 +274,7 @@ wg show`}</Code>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     VPN <span style={{ color: colors.danger }}>Commerciali</span> vs <span style={{ color: colors.success }}>Self-hosted</span>
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div style={{ background: colors.bgCard, border: `1px solid ${colors.danger}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
                         <h3 style={{ color: colors.danger, fontSize: 'clamp(18px, 1.7vw, 26px)', fontWeight: 700, marginBottom: '16px' }}>🏪 VPN Commerciali</h3>
                         <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 16px)', marginBottom: '16px' }}>
@@ -425,7 +425,7 @@ wg show`}</Code>
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Topologie <span style={{ color: MODULE_COLOR }}>WireGuard</span> e VPN mesh
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <Glow color={colors.info}>
                             <h4 style={{ color: colors.info, fontSize: 'clamp(14px, 1.3vw, 18px)', marginBottom: '10px' }}>⭐ Hub-and-Spoke (classica)</h4>

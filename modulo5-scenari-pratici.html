@@ -89,7 +89,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Scenario 1: <span style={{ color: MODULE_COLOR }}>Site-to-Site</span> — Collegare due sedi
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: '500px' }}>
                             {/* Sede Milano */}
@@ -155,9 +155,9 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Scenario 2: <span style={{ color: MODULE_COLOR }}>Remote Access</span> — Smart working
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
-                        <svg viewBox="0 0 480 260" style={{ width: '100%', maxWidth: '480px' }}>
+                        <svg viewBox="0 0 480 260" style={{ width: '100%', maxWidth: 'clamp(340px, 45vw, 520px)' }}>
                             {/* Remote workers */}
                             <text x="50" y="30" textAnchor="middle" fill={colors.text} fontSize="24">🏠</text>
                             <text x="50" y="50" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Casa (Wi-Fi)</text>
@@ -217,7 +217,7 @@
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     Scenario 3: <span style={{ color: MODULE_COLOR }}>Accesso sicuro</span> a servizi interni
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <div>
                         {[
                             { icon: '🗄️', title: 'Database amministrativo', desc: 'Accesso al DB MySQL/PostgreSQL su porta 3306/5432 solo tramite VPN. Nessuna esposizione pubblica.', color: colors.info },
@@ -261,7 +261,7 @@ iptables -A INPUT -i wg0 -p tcp \\
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     <span style={{ color: colors.success }}>Split</span> vs <span style={{ color: colors.danger }}>Full</span> Tunneling
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '24px' }} className="slide-grid">
                     <Glow color={colors.success}>
                         <h3 style={{ color: colors.success, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔀 Split Tunneling</h3>
                         <svg viewBox="0 0 350 160" style={{ width: '100%', marginBottom: '12px' }}>
@@ -319,7 +319,7 @@ iptables -A INPUT -i wg0 -p tcp \\
                 <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
                     <span style={{ color: colors.danger }}>Troubleshooting</span> VPN comuni
                 </h2>
-                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} className="slide-grid">
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }} className="slide-grid">
                     {[
                         { problem: 'Tunnel non si stabilisce', causes: ['Porta bloccata dal firewall (UDP 500/4500/51820)', 'PSK/certificati non corrispondenti', 'Parametri IKE non matching (cipher, DH group)'], fix: 'Verificare logs: show crypto isakmp sa / journalctl -u wg-quick@wg0', color: colors.danger },
                         { problem: 'Tunnel attivo ma no traffico', causes: ['ACL traffico interessante errata', 'Routing mancante verso subnet remota', 'NAT che interferisce con il tunnel'], fix: 'Verificare: ping + traceroute, show crypto ipsec sa (contatori pacchetti)', color: colors.warn },
@@ -607,7 +607,7 @@ interface GigabitEthernet0/0
                     </div>
 
                     {scenario && (
-                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} className="slide-grid">
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(250px, 1fr))', gap: '16px' }} className="slide-grid">
                             <div>
                                 <div style={{ background: colors.bgCard, borderRadius: '12px', border: `1px solid ${colors.border}`, padding: '16px', marginBottom: '12px' }}>
                                     <h4 style={{ color: MODULE_COLOR, marginBottom: '8px' }}>{scenarios.find(s => s.id === scenario)?.name}</h4>
