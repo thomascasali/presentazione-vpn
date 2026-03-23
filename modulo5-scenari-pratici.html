@@ -1,0 +1,723 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulo 5 - Scenari Pratici e Laboratorio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } .slide-grid { grid-template-columns: 1fr !important; } svg { max-width: 100% !important; } pre { white-space: pre-wrap !important; word-break: break-all !important; } }
+        @media (max-width: 480px) { html { font-size: 13px; } button { width: 100% !important; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#22d3ee', accentAlt: '#0ea5e9',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const MODULE_NUM = 5;
+        const MODULE_TITLE = 'Scenari Pratici e Lab';
+        const MODULE_COLOR = '#22d3ee';
+        const PREV_MODULE = { title: 'WireGuard e VPN Moderne', file: 'modulo4-wireguard.html' };
+        const NEXT_MODULE = { title: 'Quiz e Riepilogo', file: 'modulo6-quiz.html' };
+
+        const Code = ({ children, title }) => (
+            <pre style={{ background: '#0d1117', border: `1px solid ${colors.border}`, borderRadius: '12px', padding: 'clamp(14px, 1.5vw, 20px)', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: "'JetBrains Mono', monospace", overflowX: 'auto', lineHeight: 1.7 }}>
+                {title && <div style={{ color: MODULE_COLOR, paddingBottom: '10px', fontWeight: 600 }}>{'// '}{title}</div>}
+                <code>{children}</code>
+            </pre>
+        );
+
+        const Box = ({ type, title, children }) => {
+            const colorMap = { info: colors.info, warn: colors.warn, danger: colors.danger, success: colors.success, tip: MODULE_COLOR };
+            const iconMap = { info: 'ℹ️', warn: '⚠️', danger: '❌', success: '✅', tip: '💡' };
+            return (
+                <div style={{ borderLeft: `4px solid ${colorMap[type] || colors.info}`, padding: 'clamp(14px, 1.5vw, 20px)', margin: '16px 0', borderRadius: '0 12px 12px 0', background: colors.bgCard }}>
+                    {title && <div style={{ color: colorMap[type], fontWeight: 700, marginBottom: '8px', fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{iconMap[type]} {title}</div>}
+                    <div style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{children}</div>
+                </div>
+            );
+        };
+
+        const Table = ({ headers, rows }) => (
+            <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(12px, 1.1vw, 16px)' }}>
+                    <thead><tr>{headers.map((h, i) => <th key={i} style={{ padding: 'clamp(8px, 1vw, 14px)', background: colors.bgLight, color: MODULE_COLOR, fontWeight: 700, textAlign: 'left', borderBottom: `2px solid ${MODULE_COLOR}40` }}>{h}</th>)}</tr></thead>
+                    <tbody>{rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} style={{ padding: 'clamp(8px, 1vw, 14px)', borderBottom: `1px solid ${colors.border}`, color: colors.textDim, background: i % 2 === 0 ? 'transparent' : `${colors.bgLight}40` }}>{cell}</td>)}</tr>)}</tbody>
+                </table>
+            </div>
+        );
+
+        const Glow = ({ children, color }) => (
+            <div style={{ border: `2px solid ${color || MODULE_COLOR}`, borderRadius: '16px', padding: 'clamp(16px, 2vw, 24px)', boxShadow: `0 0 25px ${(color || MODULE_COLOR)}30`, background: colors.bgCard }}>{children}</div>
+        );
+
+        // ─── SLIDE ───
+        const SlideTitolo = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', gap: '20px' }}>
+                <div style={{ fontSize: '72px' }}>🔧</div>
+                <div style={{ fontSize: 'clamp(12px, 1.1vw, 15px)', color: MODULE_COLOR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Modulo {MODULE_NUM}</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 4vw, 68px)', fontWeight: 700, background: `linear-gradient(135deg, ${MODULE_COLOR}, ${colors.info})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {MODULE_TITLE}
+                </h1>
+                <p style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: colors.textDim, maxWidth: '600px' }}>
+                    Scenari reali, split tunneling, troubleshooting e configurazione guidata
+                </p>
+            </div>
+        );
+
+        const SlideScenario1 = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Scenario 1: <span style={{ color: MODULE_COLOR }}>Site-to-Site</span> — Collegare due sedi
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <svg viewBox="0 0 500 280" style={{ width: '100%', maxWidth: '500px' }}>
+                            {/* Sede Milano */}
+                            <rect x="10" y="30" width="160" height="140" rx="12" fill={`${colors.info}08`} stroke={colors.info} strokeWidth="2" />
+                            <text x="90" y="55" textAnchor="middle" fill={colors.info} fontSize="13" fontWeight="700" fontFamily="Inter">🏢 Sede Milano</text>
+                            <text x="90" y="75" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">LAN: 192.168.1.0/24</text>
+                            <rect x="30" y="85" width="55" height="30" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="57" y="104" textAnchor="middle" fill={colors.textDim} fontSize="8" fontFamily="Inter">Server</text>
+                            <rect x="95" y="85" width="55" height="30" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="122" y="104" textAnchor="middle" fill={colors.textDim} fontSize="8" fontFamily="Inter">PC</text>
+                            <rect x="50" y="130" width="80" height="30" rx="6" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="90" y="150" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontWeight="700" fontFamily="Inter">Router VPN</text>
+                            <text x="90" y="180" textAnchor="middle" fill={colors.textMuted} fontSize="9" fontFamily="Inter">203.0.113.1</text>
+
+                            {/* Internet */}
+                            <ellipse cx="250" cy="120" rx="50" ry="30" fill="none" stroke={colors.border} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <text x="250" y="125" textAnchor="middle" fill={colors.textMuted} fontSize="10" fontFamily="Inter">🌐 Internet</text>
+
+                            {/* Tunnel */}
+                            <rect x="135" y="140" width="230" height="20" rx="10" fill={`${MODULE_COLOR}10`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="250" y="155" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontWeight="600" fontFamily="Inter">🔒 IPsec Tunnel</text>
+
+                            {/* Sede Roma */}
+                            <rect x="330" y="30" width="160" height="140" rx="12" fill={`${colors.purple}08`} stroke={colors.purple} strokeWidth="2" />
+                            <text x="410" y="55" textAnchor="middle" fill={colors.purple} fontSize="13" fontWeight="700" fontFamily="Inter">🏢 Sede Roma</text>
+                            <text x="410" y="75" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">LAN: 10.0.2.0/24</text>
+                            <rect x="350" y="85" width="55" height="30" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="377" y="104" textAnchor="middle" fill={colors.textDim} fontSize="8" fontFamily="Inter">Server</text>
+                            <rect x="415" y="85" width="55" height="30" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="442" y="104" textAnchor="middle" fill={colors.textDim} fontSize="8" fontFamily="Inter">PC</text>
+                            <rect x="370" y="130" width="80" height="30" rx="6" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="410" y="150" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontWeight="700" fontFamily="Inter">Router VPN</text>
+                            <text x="410" y="180" textAnchor="middle" fill={colors.textMuted} fontSize="9" fontFamily="Inter">203.0.113.2</text>
+
+                            {/* Result */}
+                            <rect x="100" y="210" width="300" height="35" rx="8" fill={`${colors.success}10`} stroke={colors.success} strokeWidth="1.5" />
+                            <text x="250" y="232" textAnchor="middle" fill={colors.success} fontSize="11" fontWeight="600" fontFamily="Inter">✅ 192.168.1.0/24 ↔ 10.0.2.0/24 come stessa LAN</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <Box type="info" title="Requisiti">
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                <li>• IP pubblico statico su entrambi i router</li>
+                                <li>• IPsec ESP in Tunnel Mode</li>
+                                <li>• Subnet non sovrapposte tra le sedi</li>
+                                <li>• Tunnel permanente (always-on)</li>
+                            </ul>
+                        </Box>
+                        <Box type="tip" title="Protocollo consigliato">
+                            <strong>IPsec/IKEv2</strong> per ambienti enterprise con router Cisco/Fortinet. <strong>WireGuard</strong> per deployment più agili su Linux.
+                        </Box>
+                        <Code title="Routing statico (lato Milano)">
+{`ip route 10.0.2.0 255.255.255.0
+  Tunnel0
+! Il traffico verso Roma entra nel tunnel`}</Code>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideScenario2 = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Scenario 2: <span style={{ color: MODULE_COLOR }}>Remote Access</span> — Smart working
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <svg viewBox="0 0 480 260" style={{ width: '100%', maxWidth: '480px' }}>
+                            {/* Remote workers */}
+                            <text x="50" y="30" textAnchor="middle" fill={colors.text} fontSize="24">🏠</text>
+                            <text x="50" y="50" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Casa (Wi-Fi)</text>
+                            <text x="50" y="95" textAnchor="middle" fill={colors.text} fontSize="24">☕</text>
+                            <text x="50" y="115" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Bar (4G)</text>
+                            <text x="50" y="160" textAnchor="middle" fill={colors.text} fontSize="24">✈️</text>
+                            <text x="50" y="180" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Hotel (Wi-Fi)</text>
+
+                            {/* Lines to VPN server */}
+                            <line x1="80" y1="30" x2="200" y2="95" stroke={MODULE_COLOR} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <line x1="80" y1="95" x2="200" y2="100" stroke={MODULE_COLOR} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <line x1="80" y1="160" x2="200" y2="105" stroke={MODULE_COLOR} strokeWidth="1.5" strokeDasharray="4,3" />
+
+                            {/* VPN Server */}
+                            <rect x="200" y="70" width="80" height="60" rx="10" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="240" y="95" textAnchor="middle" fill={colors.text} fontSize="20">🔒</text>
+                            <text x="240" y="118" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontWeight="700" fontFamily="Inter">VPN Server</text>
+
+                            {/* Arrow to LAN */}
+                            <line x1="280" y1="100" x2="330" y2="100" stroke={colors.success} strokeWidth="2" />
+
+                            {/* Corporate LAN */}
+                            <rect x="330" y="30" width="140" height="180" rx="12" fill={`${colors.success}08`} stroke={colors.success} strokeWidth="2" />
+                            <text x="400" y="55" textAnchor="middle" fill={colors.success} fontSize="12" fontWeight="700" fontFamily="Inter">🏢 Rete Aziendale</text>
+                            {[{ label: 'File Server', y: 80 }, { label: 'Database', y: 110 }, { label: 'Intranet', y: 140 }, { label: 'Stampanti', y: 170 }].map((s, i) => (
+                                <g key={i}>
+                                    <rect x="350" y={s.y - 10} width="100" height="25" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                                    <text x="400" y={s.y + 7} textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">{s.label}</text>
+                                </g>
+                            ))}
+
+                            <text x="240" y="240" textAnchor="middle" fill={colors.textMuted} fontSize="10" fontFamily="Inter">Ogni utente ha il proprio certificato/chiave</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <Box type="info" title="Caratteristiche">
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                <li>• Ogni dipendente installa un client VPN</li>
+                                <li>• Connessione on-demand (quando serve)</li>
+                                <li>• Autenticazione: certificato + password (MFA)</li>
+                                <li>• Split tunneling per traffico personale</li>
+                            </ul>
+                        </Box>
+                        <Box type="tip" title="Protocollo consigliato">
+                            <strong>OpenVPN</strong> (TCP 443 per bypass firewall) o <strong>WireGuard</strong> (performance mobile). Per ambienti enterprise con Windows: <strong>IKEv2</strong> (nativo).
+                        </Box>
+                        <Box type="warn" title="Sicurezza BYOD">
+                            Con dispositivi personali (BYOD), combinare VPN con <strong>Network Access Control</strong>: verificare antivirus, OS aggiornato, patch prima di concedere accesso.
+                        </Box>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideScenario3 = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Scenario 3: <span style={{ color: MODULE_COLOR }}>Accesso sicuro</span> a servizi interni
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        {[
+                            { icon: '🗄️', title: 'Database amministrativo', desc: 'Accesso al DB MySQL/PostgreSQL su porta 3306/5432 solo tramite VPN. Nessuna esposizione pubblica.', color: colors.info },
+                            { icon: '📊', title: 'Dashboard di monitoraggio', desc: 'Grafana, Prometheus, ELK Stack accessibili solo da rete interna. VPN come unico punto d\'ingresso.', color: colors.warn },
+                            { icon: '🖥️', title: 'RDP/SSH verso server', desc: 'Remote Desktop (3389) e SSH (22) mai esposti su Internet. Accesso solo previa connessione VPN.', color: colors.purple },
+                            { icon: '🖨️', title: 'Stampanti e risorse condivise', desc: 'Stampanti di rete, NAS, share SMB raggiungibili come se si fosse in ufficio.', color: MODULE_COLOR }
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '14px', marginBottom: '16px', padding: '14px', borderRadius: '12px', background: colors.bgCard, border: `1px solid ${item.color}25` }}>
+                                <div style={{ fontSize: '28px', flexShrink: 0 }}>{item.icon}</div>
+                                <div>
+                                    <h4 style={{ color: item.color, fontSize: 'clamp(14px, 1.3vw, 18px)', fontWeight: 700, marginBottom: '4px' }}>{item.title}</h4>
+                                    <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.5 }}>{item.desc}</p>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                    <div>
+                        <Box type="success" title="Principio: Zero Trust + VPN">
+                            Non esporre MAI servizi interni su Internet. La VPN crea un perimetro di sicurezza:
+                            solo chi è autenticato e connesso alla VPN può raggiungere i servizi.
+                        </Box>
+                        <Code title="Firewall: blocca accesso diretto">
+{`# Solo VPN può raggiungere i servizi
+iptables -A INPUT -i eth0 -p tcp \\
+  --dport 3306 -j DROP
+iptables -A INPUT -i eth0 -p tcp \\
+  --dport 22 -j DROP
+
+# Consenti da interfaccia VPN
+iptables -A INPUT -i wg0 -p tcp \\
+  --dport 3306 -j ACCEPT
+iptables -A INPUT -i wg0 -p tcp \\
+  --dport 22 -j ACCEPT`}</Code>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideSplitTunnel = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.success }}>Split</span> vs <span style={{ color: colors.danger }}>Full</span> Tunneling
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <Glow color={colors.success}>
+                        <h3 style={{ color: colors.success, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔀 Split Tunneling</h3>
+                        <svg viewBox="0 0 350 160" style={{ width: '100%', marginBottom: '12px' }}>
+                            <text x="40" y="80" textAnchor="middle" fill={colors.text} fontSize="24">💻</text>
+                            <line x1="60" y1="65" x2="160" y2="40" stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="140" y="30" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter" fontWeight="600">Traffico aziendale → VPN</text>
+                            <rect x="160" y="25" width="80" height="30" rx="8" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="200" y="44" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontFamily="Inter">🔒 VPN</text>
+                            <line x1="240" y1="40" x2="310" y2="40" stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="310" y="44" fill={colors.text} fontSize="16">🏢</text>
+
+                            <line x1="60" y1="90" x2="310" y2="120" stroke={colors.textMuted} strokeWidth="2" strokeDasharray="4,3" />
+                            <text x="170" y="120" fill={colors.textMuted} fontSize="10" fontFamily="Inter">Traffico personale → Internet diretto</text>
+                            <text x="320" y="124" fill={colors.text} fontSize="16">🌐</text>
+                        </svg>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6, marginBottom: '10px' }}>
+                            Solo il traffico verso la rete aziendale passa per la VPN. Il resto va direttamente su Internet.
+                        </p>
+                        {['✓ Banda internet non ridotta', '✓ Meno carico sul server VPN', '✓ YouTube, Netflix vanno veloci', '✗ Traffico internet non protetto', '✗ Possibile DNS leak'].map((item, i) => (
+                            <div key={i} style={{ fontSize: 'clamp(12px, 1.1vw, 14px)', color: item.startsWith('✓') ? colors.success : colors.danger, marginBottom: '4px' }}>{item}</div>
+                        ))}
+                    </Glow>
+                    <Glow color={colors.danger}>
+                        <h3 style={{ color: colors.danger, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔒 Full Tunneling</h3>
+                        <svg viewBox="0 0 350 160" style={{ width: '100%', marginBottom: '12px' }}>
+                            <text x="40" y="80" textAnchor="middle" fill={colors.text} fontSize="24">💻</text>
+                            <rect x="80" y="55" width="120" height="40" rx="20" fill={`${colors.danger}10`} stroke={colors.danger} strokeWidth="2" />
+                            <text x="140" y="80" textAnchor="middle" fill={colors.danger} fontSize="10" fontWeight="600" fontFamily="Inter">🔒 TUTTO via VPN</text>
+                            <line x1="200" y1="65" x2="280" y2="40" stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="300" y="44" fill={colors.text} fontSize="16">🏢</text>
+                            <line x1="200" y1="85" x2="280" y2="120" stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="300" y="124" fill={colors.text} fontSize="16">🌐</text>
+                            <text x="290" y="85" fill={colors.textMuted} fontSize="9" fontFamily="Inter">via server VPN</text>
+                        </svg>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6, marginBottom: '10px' }}>
+                            TUTTO il traffico (aziendale e personale) passa per il tunnel VPN. Massima sicurezza.
+                        </p>
+                        {['✓ Tutto il traffico crittografato', '✓ IP nascosto per ogni sito', '✓ Protezione DNS completa', '✗ Banda limitata dal server VPN', '✗ Latenza maggiore per tutto'].map((item, i) => (
+                            <div key={i} style={{ fontSize: 'clamp(12px, 1.1vw, 14px)', color: item.startsWith('✓') ? colors.success : colors.danger, marginBottom: '4px' }}>{item}</div>
+                        ))}
+                    </Glow>
+                </div>
+                <Table
+                    headers={['Configurazione', 'OpenVPN', 'WireGuard']}
+                    rows={[
+                        [<strong style={{ color: colors.success }}>Split tunnel</strong>, <code>route 192.168.1.0 255.255.255.0</code>, <code>AllowedIPs = 10.0.0.0/24, 192.168.1.0/24</code>],
+                        [<strong style={{ color: colors.danger }}>Full tunnel</strong>, <code>redirect-gateway def1</code>, <code>AllowedIPs = 0.0.0.0/0</code>]
+                    ]}
+                />
+            </div>
+        );
+
+        const SlideTroubleshooting = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.danger }}>Troubleshooting</span> VPN comuni
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} className="slide-grid">
+                    {[
+                        { problem: 'Tunnel non si stabilisce', causes: ['Porta bloccata dal firewall (UDP 500/4500/51820)', 'PSK/certificati non corrispondenti', 'Parametri IKE non matching (cipher, DH group)'], fix: 'Verificare logs: show crypto isakmp sa / journalctl -u wg-quick@wg0', color: colors.danger },
+                        { problem: 'Tunnel attivo ma no traffico', causes: ['ACL traffico interessante errata', 'Routing mancante verso subnet remota', 'NAT che interferisce con il tunnel'], fix: 'Verificare: ping + traceroute, show crypto ipsec sa (contatori pacchetti)', color: colors.warn },
+                        { problem: 'Performance scadenti', causes: ['MTU/MSS non ottimizzato (frammentazione)', 'Compressione su dati già compressi', 'TCP over TCP (OpenVPN su TCP)'], fix: 'Abbassare MTU a 1400, usare UDP, disabilitare compressione', color: colors.info },
+                        { problem: 'Disconnessioni frequenti', causes: ['Keepalive non configurato', 'DPD (Dead Peer Detection) troppo aggressivo', 'NAT timeout troppo breve'], fix: 'keepalive 10 120 (OpenVPN) / PersistentKeepalive = 25 (WireGuard)', color: colors.purple }
+                    ].map((item, i) => (
+                        <div key={i} style={{ background: colors.bgCard, border: `1px solid ${item.color}30`, borderRadius: '12px', padding: 'clamp(14px, 1.5vw, 20px)' }}>
+                            <h4 style={{ color: item.color, fontSize: 'clamp(14px, 1.3vw, 18px)', fontWeight: 700, marginBottom: '10px' }}>🔴 {item.problem}</h4>
+                            <div style={{ marginBottom: '10px' }}>
+                                <div style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 13px)', fontWeight: 600, marginBottom: '4px' }}>Cause:</div>
+                                {item.causes.map((c, j) => <div key={j} style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 14px)', paddingLeft: '10px' }}>• {c}</div>)}
+                            </div>
+                            <div style={{ padding: '8px 12px', borderRadius: '8px', background: `${item.color}10`, border: `1px solid ${item.color}20` }}>
+                                <div style={{ color: item.color, fontSize: 'clamp(11px, 1vw, 13px)', fontWeight: 600 }}>🔧 Fix:</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(11px, 1vw, 13px)', fontFamily: "'JetBrains Mono', monospace" }}>{item.fix}</div>
+                            </div>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        // ─── SIMULATORE CONFIGURATORE SCENARIO ───
+        const SlideSimScenario = () => {
+            const [scenario, setScenario] = useState(null);
+            const [protocol, setProtocol] = useState('wireguard');
+
+            const scenarios = [
+                {
+                    id: 'site2site',
+                    name: '🏢↔️🏢 Site-to-Site',
+                    desc: 'Due sedi con subnet diverse collegate tramite tunnel permanente',
+                    params: { sedeA: '192.168.1.0/24', sedeB: '10.0.2.0/24', pubA: '203.0.113.1', pubB: '203.0.113.2' }
+                },
+                {
+                    id: 'remote',
+                    name: '💻→🏢 Remote Access',
+                    desc: 'Dipendenti da remoto accedono alla rete aziendale',
+                    params: { lan: '192.168.1.0/24', vpnPool: '10.8.0.0/24', server: 'vpn.azienda.it', dns: '192.168.1.1' }
+                },
+                {
+                    id: 'mesh',
+                    name: '💻↔️💻 Mesh (3 nodi)',
+                    desc: 'Tre dispositivi interconnessi peer-to-peer',
+                    params: { node1: '10.0.0.1', node2: '10.0.0.2', node3: '10.0.0.3', subnet: '10.0.0.0/24' }
+                }
+            ];
+
+            const generateConfig = () => {
+                const sc = scenarios.find(s => s.id === scenario);
+                if (!sc) return '';
+
+                if (protocol === 'wireguard') {
+                    if (scenario === 'site2site') return `# ═══ SEDE A (Milano) ═══
+[Interface]
+Address = 10.0.0.1/30
+ListenPort = 51820
+PrivateKey = <sede_a_private_key>
+# PostUp/PostDown per routing
+PostUp = ip route add ${sc.params.sedeB} via 10.0.0.2
+
+[Peer]  # Sede B
+PublicKey = <sede_b_public_key>
+Endpoint = ${sc.params.pubB}:51820
+AllowedIPs = 10.0.0.2/32, ${sc.params.sedeB}
+PersistentKeepalive = 25
+
+# ═══ SEDE B (Roma) ═══
+[Interface]
+Address = 10.0.0.2/30
+ListenPort = 51820
+PrivateKey = <sede_b_private_key>
+PostUp = ip route add ${sc.params.sedeA} via 10.0.0.1
+
+[Peer]  # Sede A
+PublicKey = <sede_a_public_key>
+Endpoint = ${sc.params.pubA}:51820
+AllowedIPs = 10.0.0.1/32, ${sc.params.sedeA}
+PersistentKeepalive = 25`;
+
+                    if (scenario === 'remote') return `# ═══ SERVER ═══
+[Interface]
+Address = ${sc.params.vpnPool.replace('.0/24', '.1/24')}
+ListenPort = 51820
+PrivateKey = <server_private_key>
+PostUp = iptables -A FORWARD -i wg0 -j ACCEPT
+PostUp = iptables -t nat -A POSTROUTING -o eth0 -j MASQUERADE
+PostDown = iptables -D FORWARD -i wg0 -j ACCEPT
+PostDown = iptables -t nat -D POSTROUTING -o eth0 -j MASQUERADE
+
+[Peer]  # Dipendente 1
+PublicKey = <client1_public_key>
+AllowedIPs = 10.8.0.2/32
+
+[Peer]  # Dipendente 2
+PublicKey = <client2_public_key>
+AllowedIPs = 10.8.0.3/32
+
+# ═══ CLIENT (Dipendente 1) ═══
+[Interface]
+Address = 10.8.0.2/24
+PrivateKey = <client1_private_key>
+DNS = ${sc.params.dns}
+
+[Peer]
+PublicKey = <server_public_key>
+Endpoint = ${sc.params.server}:51820
+AllowedIPs = ${sc.params.lan}, ${sc.params.vpnPool}
+PersistentKeepalive = 25`;
+
+                    if (scenario === 'mesh') return `# ═══ NODO 1 ═══
+[Interface]
+Address = ${sc.params.node1}/24
+ListenPort = 51820
+PrivateKey = <node1_private_key>
+
+[Peer]  # Nodo 2
+PublicKey = <node2_public_key>
+Endpoint = peer2.example.com:51820
+AllowedIPs = ${sc.params.node2}/32
+PersistentKeepalive = 25
+
+[Peer]  # Nodo 3
+PublicKey = <node3_public_key>
+Endpoint = peer3.example.com:51820
+AllowedIPs = ${sc.params.node3}/32
+PersistentKeepalive = 25
+
+# Ripetere struttura simile per Nodo 2 e 3
+# (ogni nodo ha come peer gli altri due)`;
+                }
+
+                if (protocol === 'openvpn') {
+                    if (scenario === 'site2site') return `# ═══ SERVER (Milano) ═══
+# /etc/openvpn/site2site.conf
+mode server
+tls-server
+local ${sc.params.pubA}
+port 1194
+proto udp
+dev tun
+topology subnet
+
+ca   /etc/openvpn/ca.crt
+cert /etc/openvpn/milano.crt
+key  /etc/openvpn/milano.key
+dh   /etc/openvpn/dh2048.pem
+tls-auth /etc/openvpn/ta.key 0
+
+ifconfig 10.0.0.1 255.255.255.252
+route ${sc.params.sedeB.replace('/24', '')} 255.255.255.0
+
+cipher AES-256-GCM
+auth SHA256
+keepalive 10 120
+persist-key
+persist-tun`;
+
+                    if (scenario === 'remote') return `# ═══ SERVER ═══
+port 443
+proto tcp
+dev tun
+server ${sc.params.vpnPool.replace('/24', '')} 255.255.255.0
+
+ca   /etc/openvpn/ca.crt
+cert /etc/openvpn/server.crt
+key  /etc/openvpn/server.key
+dh   /etc/openvpn/dh2048.pem
+tls-crypt /etc/openvpn/ta.key
+
+push "route ${sc.params.lan.replace('/24', '')} 255.255.255.0"
+push "dhcp-option DNS ${sc.params.dns}"
+push "block-outside-dns"
+
+cipher AES-256-GCM
+auth SHA256
+keepalive 10 120
+max-clients 50
+user nobody
+group nogroup
+
+# ═══ CLIENT ═══
+client
+dev tun
+proto tcp
+remote ${sc.params.server} 443
+cipher AES-256-GCM
+auth SHA256
+remote-cert-tls server
+<ca>...</ca>
+<cert>...</cert>
+<key>...</key>
+<tls-crypt>...</tls-crypt>`;
+
+                    if (scenario === 'mesh') return `# OpenVPN non è ideale per mesh.
+# Richiede un server centrale (hub-and-spoke).
+# Per mesh reali, usare WireGuard o Tailscale.
+
+# Architettura possibile:
+# Server hub con client-to-client abilitato
+server 10.0.0.0 255.255.255.0
+client-to-client
+# Ma il traffico passa sempre dal server.`;
+                }
+
+                if (protocol === 'ipsec') {
+                    if (scenario === 'site2site') return `! ═══ ROUTER MILANO (Cisco) ═══
+
+! IKE Phase 1
+crypto isakmp policy 10
+ encryption aes 256
+ hash sha256
+ authentication pre-share
+ group 14
+ lifetime 86400
+crypto isakmp key VpnS3cret! address ${sc.params.pubB}
+
+! IPsec Phase 2
+crypto ipsec transform-set VPN-TS \\
+  esp-aes 256 esp-sha256-hmac
+ mode tunnel
+
+! Traffico interessante
+access-list 100 permit ip \\
+  ${sc.params.sedeA.replace('/24', '')} 0.0.0.255 \\
+  ${sc.params.sedeB.replace('/24', '')} 0.0.0.255
+
+! Crypto Map
+crypto map VPN-MAP 10 ipsec-isakmp
+ set peer ${sc.params.pubB}
+ set transform-set VPN-TS
+ match address 100
+
+! Applica all'interfaccia WAN
+interface GigabitEthernet0/0
+ crypto map VPN-MAP
+
+! ═══ ROUTER ROMA: config speculare ═══`;
+
+                    return `! IPsec è pensato per Site-to-Site.
+! Per Remote Access usare IKEv2 + EAP
+! o FlexVPN su router Cisco.`;
+                }
+
+                return '';
+            };
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Configuratore <span style={{ color: MODULE_COLOR }}>Scenario VPN</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Scegli scenario e protocollo per generare la configurazione completa.
+                    </p>
+
+                    {/* Scenario selection */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '12px' }}>
+                        {scenarios.map(s => (
+                            <button key={s.id} onClick={() => setScenario(s.id)} style={{
+                                padding: '10px 16px', borderRadius: '10px',
+                                border: `2px solid ${scenario === s.id ? MODULE_COLOR : colors.border}`,
+                                background: scenario === s.id ? `${MODULE_COLOR}20` : colors.bgCard,
+                                color: scenario === s.id ? MODULE_COLOR : colors.textDim,
+                                cursor: 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600
+                            }}>{s.name}</button>
+                        ))}
+                    </div>
+
+                    {/* Protocol selection */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                        {[
+                            { id: 'wireguard', label: '⚡ WireGuard', color: colors.purple },
+                            { id: 'openvpn', label: '📜 OpenVPN', color: colors.warn },
+                            { id: 'ipsec', label: '🛡️ IPsec (Cisco)', color: colors.info }
+                        ].map(p => (
+                            <button key={p.id} onClick={() => setProtocol(p.id)} style={{
+                                padding: '8px 14px', borderRadius: '8px',
+                                border: `2px solid ${protocol === p.id ? p.color : colors.border}`,
+                                background: protocol === p.id ? `${p.color}20` : colors.bgCard,
+                                color: protocol === p.id ? p.color : colors.textDim,
+                                cursor: 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600
+                            }}>{p.label}</button>
+                        ))}
+                    </div>
+
+                    {scenario && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} className="slide-grid">
+                            <div>
+                                <div style={{ background: colors.bgCard, borderRadius: '12px', border: `1px solid ${colors.border}`, padding: '16px', marginBottom: '12px' }}>
+                                    <h4 style={{ color: MODULE_COLOR, marginBottom: '8px' }}>{scenarios.find(s => s.id === scenario)?.name}</h4>
+                                    <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{scenarios.find(s => s.id === scenario)?.desc}</p>
+                                    <div style={{ marginTop: '10px' }}>
+                                        {Object.entries(scenarios.find(s => s.id === scenario)?.params || {}).map(([k, v]) => (
+                                            <div key={k} style={{ display: 'flex', justifyContent: 'space-between', padding: '4px 0', borderBottom: `1px solid ${colors.border}30` }}>
+                                                <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 13px)' }}>{k}</span>
+                                                <span style={{ color: colors.text, fontSize: 'clamp(11px, 1vw, 13px)', fontFamily: "'JetBrains Mono', monospace" }}>{v}</span>
+                                            </div>
+                                        ))}
+                                    </div>
+                                </div>
+                            </div>
+                            <Code title={`Configurazione ${protocol} — ${scenario}`}>
+                                {generateConfig()}
+                            </Code>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SlideBestPractices = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Best Practices e <span style={{ color: MODULE_COLOR }}>Riepilogo</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
+                    <Box type="success" title="Checklist deployment VPN">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {['Definire scenario (S2S, RA, mesh)', 'Scegliere protocollo adeguato', 'Pianificare subnet (no overlap!)', 'Decidere split vs full tunneling', 'Configurare DNS nel tunnel', 'Testare failover e keepalive', 'Documentare configurazione'].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.success }}>✓</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                    <Box type="warn" title="Errori comuni">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {['Subnet sovrapposte tra sedi', 'Dimenticare routing verso subnet remota', 'MTU non ottimizzato (frammentazione)', 'Nessun keepalive → timeout NAT', 'DNS leak con split tunneling', 'Firewall che blocca traffico VPN'].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.warn }}>⚠️</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                </div>
+                <Glow>
+                    <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>📋 Riepilogo Modulo 5</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }} className="slide-grid">
+                        {[
+                            { label: 'Site-to-Site', value: 'Tunnel permanente tra gateway, IPsec/WG' },
+                            { label: 'Remote Access', value: 'Client VPN per smart working, OpenVPN/WG' },
+                            { label: 'Servizi interni', value: 'Zero Trust: accesso solo tramite VPN' },
+                            { label: 'Split vs Full', value: 'Split: performance. Full: sicurezza' },
+                            { label: 'Troubleshooting', value: 'Logs, contatori SA, MTU, keepalive' },
+                            { label: 'Prossimo', value: 'Modulo 6: Quiz finale →' }
+                        ].map((item, i) => (
+                            <div key={i} style={{ padding: '10px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>{item.label}</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </Glow>
+            </div>
+        );
+
+        const slides = [SlideTitolo, SlideScenario1, SlideScenario2, SlideScenario3, SlideSplitTunnel, SlideTroubleshooting, SlideSimScenario, SlideBestPractices];
+
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const total = slides.length;
+            const goNext = useCallback(() => setCurrentSlide(s => Math.min(s + 1, total - 1)), [total]);
+            const goPrev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
+            const goIndex = useCallback(() => { window.location.href = 'index.html'; }, []);
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+                    if (e.key === 'Escape') goIndex();
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [goNext, goPrev, goIndex]);
+
+            const SlideComponent = slides[currentSlide];
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <a href="index.html" style={{ color: colors.textDim, textDecoration: 'none', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Indice</a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>M{MODULE_NUM}</span>
+                            <span style={{ color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{MODULE_TITLE}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 14px)' }}>{currentSlide + 1} / {total}</span>
+                            <div style={{ width: '80px', height: '4px', background: colors.bgLight, borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${((currentSlide + 1) / total) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '2px', transition: 'width 0.3s' }} />
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, maxWidth: '2200px', width: '94%', margin: '0 auto', padding: '70px 0 80px' }}><SlideComponent /></div>
+                    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderTop: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button onClick={goPrev} disabled={currentSlide === 0} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: currentSlide === 0 ? 'transparent' : colors.bgLight, color: currentSlide === 0 ? colors.textMuted : colors.text, cursor: currentSlide === 0 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter' }}>← Indietro</button>
+                        <div style={{ display: 'flex', gap: '16px', fontSize: 'clamp(11px, 1vw, 14px)' }}>
+                            {currentSlide === 0 && PREV_MODULE && <a href={PREV_MODULE.file} style={{ color: colors.textMuted, textDecoration: 'none' }}>← {PREV_MODULE.title}</a>}
+                            {currentSlide === total - 1 && NEXT_MODULE && <a href={NEXT_MODULE.file} style={{ color: MODULE_COLOR, textDecoration: 'none', fontWeight: 600 }}>{NEXT_MODULE.title} →</a>}
+                        </div>
+                        <button onClick={goNext} disabled={currentSlide === total - 1} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: currentSlide === total - 1 ? 'transparent' : `${MODULE_COLOR}20`, color: currentSlide === total - 1 ? colors.textMuted : MODULE_COLOR, cursor: currentSlide === total - 1 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600 }}>Avanti →</button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
