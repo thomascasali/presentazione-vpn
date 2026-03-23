@@ -1,0 +1,833 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulo 2 - IPsec in Dettaglio</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } .slide-grid { grid-template-columns: 1fr !important; } svg { max-width: 100% !important; } pre { white-space: pre-wrap !important; word-break: break-all !important; } }
+        @media (max-width: 480px) { html { font-size: 13px; } button { width: 100% !important; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#0ea5e9', accentAlt: '#00d4aa',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const MODULE_NUM = 2;
+        const MODULE_TITLE = 'IPsec in Dettaglio';
+        const MODULE_COLOR = '#0ea5e9';
+        const PREV_MODULE = { title: 'Fondamenti VPN', file: 'modulo1-fondamenti-vpn.html' };
+        const NEXT_MODULE = { title: 'VPN SSL/TLS e OpenVPN', file: 'modulo3-openvpn.html' };
+
+        // ─── Componenti Riutilizzabili ───
+        const Code = ({ children, title }) => (
+            <pre style={{ background: '#0d1117', border: `1px solid ${colors.border}`, borderRadius: '12px', padding: 'clamp(14px, 1.5vw, 20px)', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: "'JetBrains Mono', monospace", overflowX: 'auto', lineHeight: 1.7 }}>
+                {title && <div style={{ color: MODULE_COLOR, paddingBottom: '10px', fontWeight: 600 }}>{'// '}{title}</div>}
+                <code>{children}</code>
+            </pre>
+        );
+
+        const Box = ({ type, title, children }) => {
+            const colorMap = { info: colors.info, warn: colors.warn, danger: colors.danger, success: colors.success, tip: MODULE_COLOR };
+            const iconMap = { info: 'ℹ️', warn: '⚠️', danger: '❌', success: '✅', tip: '💡' };
+            return (
+                <div style={{ borderLeft: `4px solid ${colorMap[type] || colors.info}`, padding: 'clamp(14px, 1.5vw, 20px)', margin: '16px 0', borderRadius: '0 12px 12px 0', background: colors.bgCard }}>
+                    {title && <div style={{ color: colorMap[type], fontWeight: 700, marginBottom: '8px', fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{iconMap[type]} {title}</div>}
+                    <div style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{children}</div>
+                </div>
+            );
+        };
+
+        const Table = ({ headers, rows }) => (
+            <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(12px, 1.1vw, 16px)' }}>
+                    <thead><tr>{headers.map((h, i) => (
+                        <th key={i} style={{ padding: 'clamp(8px, 1vw, 14px)', background: colors.bgLight, color: MODULE_COLOR, fontWeight: 700, textAlign: 'left', borderBottom: `2px solid ${MODULE_COLOR}40` }}>{h}</th>
+                    ))}</tr></thead>
+                    <tbody>{rows.map((row, i) => (
+                        <tr key={i}>{row.map((cell, j) => (
+                            <td key={j} style={{ padding: 'clamp(8px, 1vw, 14px)', borderBottom: `1px solid ${colors.border}`, color: colors.textDim, background: i % 2 === 0 ? 'transparent' : `${colors.bgLight}40` }}>{cell}</td>
+                        ))}</tr>
+                    ))}</tbody>
+                </table>
+            </div>
+        );
+
+        const Glow = ({ children, color }) => (
+            <div style={{ border: `2px solid ${color || MODULE_COLOR}`, borderRadius: '16px', padding: 'clamp(16px, 2vw, 24px)', boxShadow: `0 0 25px ${(color || MODULE_COLOR)}30`, background: colors.bgCard }}>
+                {children}
+            </div>
+        );
+
+        // ─── SLIDE ───
+
+        const SlideTitolo = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', gap: '20px' }}>
+                <div style={{ fontSize: '72px' }}>🛡️</div>
+                <div style={{ fontSize: 'clamp(12px, 1.1vw, 15px)', color: MODULE_COLOR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Modulo {MODULE_NUM}</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 4vw, 68px)', fontWeight: 700, background: `linear-gradient(135deg, ${MODULE_COLOR}, ${colors.purple})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {MODULE_TITLE}
+                </h1>
+                <p style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: colors.textDim, maxWidth: '600px' }}>
+                    Architettura IPsec, protocolli AH e ESP, IKE, Security Association e configurazione Cisco
+                </p>
+            </div>
+        );
+
+        const SlideArchitettura = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Architettura <span style={{ color: MODULE_COLOR }}>IPsec</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="info" title="Cos'è IPsec?">
+                            <strong>Internet Protocol Security</strong> è una suite di protocolli che opera a <strong style={{ color: colors.text }}>livello rete (L3)</strong> dello stack OSI.
+                            Fornisce crittografia, autenticazione e integrità per ogni pacchetto IP.
+                        </Box>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '14px', marginTop: '16px' }}>
+                            <Glow color={colors.warn}>
+                                <h4 style={{ color: colors.warn, fontSize: 'clamp(14px, 1.3vw, 18px)', marginBottom: '8px' }}>🔍 AH</h4>
+                                <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>
+                                    <strong>Authentication Header</strong><br/>
+                                    Autenticazione + Integrità<br/>
+                                    <span style={{ color: colors.danger }}>NO crittografia</span>
+                                </p>
+                            </Glow>
+                            <Glow color={MODULE_COLOR}>
+                                <h4 style={{ color: MODULE_COLOR, fontSize: 'clamp(14px, 1.3vw, 18px)', marginBottom: '8px' }}>🔒 ESP</h4>
+                                <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>
+                                    <strong>Encapsulating Security Payload</strong><br/>
+                                    Crittografia + Autenticazione + Integrità<br/>
+                                    <span style={{ color: colors.success }}>Protocollo preferito</span>
+                                </p>
+                            </Glow>
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 450 360" style={{ width: '100%', maxWidth: '450px' }}>
+                            {/* IPsec framework box */}
+                            <rect x="20" y="10" width="410" height="340" rx="16" fill="none" stroke={MODULE_COLOR} strokeWidth="2" strokeDasharray="8,4" />
+                            <text x="225" y="40" textAnchor="middle" fill={MODULE_COLOR} fontSize="16" fontWeight="700" fontFamily="Space Grotesk">Suite IPsec</text>
+
+                            {/* AH */}
+                            <rect x="40" y="60" width="170" height="70" rx="10" fill={`${colors.warn}12`} stroke={colors.warn} strokeWidth="2" />
+                            <text x="125" y="85" textAnchor="middle" fill={colors.warn} fontSize="13" fontWeight="700" fontFamily="Inter">AH (Proto 51)</text>
+                            <text x="125" y="105" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Auth + Integrità</text>
+                            <text x="125" y="120" textAnchor="middle" fill={colors.danger} fontSize="10" fontFamily="Inter">No crittografia</text>
+
+                            {/* ESP */}
+                            <rect x="240" y="60" width="170" height="70" rx="10" fill={`${MODULE_COLOR}12`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="325" y="85" textAnchor="middle" fill={MODULE_COLOR} fontSize="13" fontWeight="700" fontFamily="Inter">ESP (Proto 50)</text>
+                            <text x="325" y="105" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Crittografia + Auth</text>
+                            <text x="325" y="120" textAnchor="middle" fill={colors.success} fontSize="10" fontFamily="Inter">✓ Il più usato</text>
+
+                            {/* IKE */}
+                            <rect x="40" y="150" width="370" height="60" rx="10" fill={`${colors.purple}12`} stroke={colors.purple} strokeWidth="2" />
+                            <text x="225" y="175" textAnchor="middle" fill={colors.purple} fontSize="13" fontWeight="700" fontFamily="Inter">IKE — Internet Key Exchange (UDP 500/4500)</text>
+                            <text x="225" y="195" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Negoziazione parametri, scambio chiavi (Diffie-Hellman)</text>
+
+                            {/* SA */}
+                            <rect x="40" y="230" width="170" height="55" rx="10" fill={`${colors.cyan}12`} stroke={colors.cyan} strokeWidth="2" />
+                            <text x="125" y="253" textAnchor="middle" fill={colors.cyan} fontSize="12" fontWeight="700" fontFamily="Inter">SA — Security Assoc.</text>
+                            <text x="125" y="273" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Parametri di sessione</text>
+
+                            {/* SPD */}
+                            <rect x="240" y="230" width="170" height="55" rx="10" fill={`${colors.accentAlt}12`} stroke={colors.accentAlt} strokeWidth="2" />
+                            <text x="325" y="253" textAnchor="middle" fill={colors.accentAlt} fontSize="12" fontWeight="700" fontFamily="Inter">SPD — Security Policy</text>
+                            <text x="325" y="273" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Regole di sicurezza</text>
+
+                            {/* Crypto algorithms */}
+                            <rect x="40" y="300" width="370" height="40" rx="10" fill={`${colors.bgLight}`} stroke={colors.border} strokeWidth="1" />
+                            <text x="225" y="325" textAnchor="middle" fill={colors.textMuted} fontSize="11" fontFamily="Inter">Algoritmi: AES-256 | SHA-256 | DH Group 14/19 | RSA/PSK</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideAHvsESP = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.warn }}>AH</span> vs <span style={{ color: MODULE_COLOR }}>ESP</span>
+                </h2>
+                <Table
+                    headers={['Caratteristica', 'AH (Authentication Header)', 'ESP (Encapsulating Security Payload)']}
+                    rows={[
+                        ['Protocollo IP', '51', '50'],
+                        ['Crittografia', <span style={{ color: colors.danger }}>❌ No</span>, <span style={{ color: colors.success }}>✅ Sì (AES, 3DES)</span>],
+                        ['Autenticazione', <span style={{ color: colors.success }}>✅ Sì</span>, <span style={{ color: colors.success }}>✅ Sì</span>],
+                        ['Integrità', <span style={{ color: colors.success }}>✅ Intero pacchetto (incluso IP header)</span>, <span style={{ color: colors.warn }}>⚠️ Solo payload (non IP header esterno)</span>],
+                        ['NAT compatibile', <span style={{ color: colors.danger }}>❌ No (modifica header → hash invalido)</span>, <span style={{ color: colors.success }}>✅ Sì (con NAT-T su UDP 4500)</span>],
+                        ['Uso reale', 'Raro, solo se serve integrità header', <strong style={{ color: MODULE_COLOR }}>Standard de facto</strong>]
+                    ]}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px', marginTop: '16px' }} className="slide-grid">
+                    <Box type="warn" title="AH — Struttura pacchetto">
+                        <Code>{`[IP Hdr][AH Hdr][Payload originale]
+         ↑
+  Next Header, SPI, Seq#, HMAC
+
+  HMAC calcolato su TUTTO il pacchetto
+  (incluso IP header → incompatibile NAT)`}</Code>
+                    </Box>
+                    <Box type="info" title="ESP — Struttura pacchetto">
+                        <Code>{`[IP Hdr][ESP Hdr][Payload crittografato][ESP Trailer][Auth]
+         ↑                                    ↑
+  SPI, Seq#                           Padding, Next Hdr
+
+  Crittografia: dal payload al trailer
+  Auth HMAC: dall'ESP header al trailer`}</Code>
+                    </Box>
+                </div>
+            </div>
+        );
+
+        const SlideModalita = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Modalità <span style={{ color: MODULE_COLOR }}>Transport</span> vs <span style={{ color: colors.purple }}>Tunnel</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <Glow color={MODULE_COLOR}>
+                        <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔄 Transport Mode</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            L'<strong style={{ color: colors.text }}>header IP originale</strong> viene mantenuto. Solo il payload viene crittografato/autenticato.
+                        </p>
+                        <svg viewBox="0 0 400 80" style={{ width: '100%' }}>
+                            <rect x="5" y="20" width="90" height="40" rx="6" fill={`${colors.accentAlt}20`} stroke={colors.accentAlt} strokeWidth="1.5" />
+                            <text x="50" y="45" textAnchor="middle" fill={colors.accentAlt} fontSize="10" fontFamily="Inter" fontWeight="600">IP Hdr orig.</text>
+                            <rect x="95" y="20" width="70" height="40" rx="6" fill={`${MODULE_COLOR}20`} stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="130" y="45" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter" fontWeight="600">ESP Hdr</text>
+                            <rect x="165" y="20" width="160" height="40" rx="6" fill={`${colors.danger}15`} stroke={colors.danger} strokeWidth="1.5" />
+                            <text x="245" y="45" textAnchor="middle" fill={colors.danger} fontSize="10" fontFamily="Inter" fontWeight="600">🔒 Payload cifrato</text>
+                            <rect x="325" y="20" width="70" height="40" rx="6" fill={`${colors.purple}15`} stroke={colors.purple} strokeWidth="1.5" />
+                            <text x="360" y="45" textAnchor="middle" fill={colors.purple} fontSize="10" fontFamily="Inter" fontWeight="600">ESP Trl</text>
+
+                            <line x1="95" y1="70" x2="395" y2="70" stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="245" y="78" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontFamily="Inter">← area protetta da ESP →</text>
+                        </svg>
+                        <Box type="tip" title="Uso">
+                            Comunicazione <strong>host-to-host</strong> (es. due server nella stessa rete). Gli IP originali sono visibili.
+                        </Box>
+                    </Glow>
+
+                    <Glow color={colors.purple}>
+                        <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🚇 Tunnel Mode</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            Un <strong style={{ color: colors.text }}>nuovo header IP</strong> viene aggiunto. L'intero pacchetto originale (IP + payload) viene crittografato.
+                        </p>
+                        <svg viewBox="0 0 400 80" style={{ width: '100%' }}>
+                            <rect x="5" y="20" width="70" height="40" rx="6" fill={`${colors.success}20`} stroke={colors.success} strokeWidth="1.5" />
+                            <text x="40" y="45" textAnchor="middle" fill={colors.success} fontSize="10" fontFamily="Inter" fontWeight="600">New IP</text>
+                            <rect x="75" y="20" width="60" height="40" rx="6" fill={`${MODULE_COLOR}20`} stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="105" y="45" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter" fontWeight="600">ESP</text>
+                            <rect x="135" y="20" width="200" height="40" rx="6" fill={`${colors.danger}15`} stroke={colors.danger} strokeWidth="1.5" />
+                            <text x="235" y="38" textAnchor="middle" fill={colors.danger} fontSize="10" fontFamily="Inter" fontWeight="600">🔒 IP orig + Payload</text>
+                            <text x="235" y="52" textAnchor="middle" fill={colors.textMuted} fontSize="8" fontFamily="Inter">(tutto cifrato)</text>
+                            <rect x="335" y="20" width="60" height="40" rx="6" fill={`${colors.purple}15`} stroke={colors.purple} strokeWidth="1.5" />
+                            <text x="365" y="45" textAnchor="middle" fill={colors.purple} fontSize="10" fontFamily="Inter" fontWeight="600">Trl</text>
+
+                            <line x1="75" y1="70" x2="395" y2="70" stroke={colors.purple} strokeWidth="2" />
+                            <text x="235" y="78" textAnchor="middle" fill={colors.purple} fontSize="9" fontFamily="Inter">← area protetta da ESP →</text>
+                        </svg>
+                        <Box type="tip" title="Uso">
+                            <strong>Site-to-Site VPN</strong> tra gateway. Gli IP originali sono nascosti, solo gli IP dei gateway sono visibili.
+                        </Box>
+                    </Glow>
+                </div>
+            </div>
+        );
+
+        const SlideIKE = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.purple }}>IKE</span> — Internet Key Exchange
+                </h2>
+                <Box type="info" title="A cosa serve IKE?">
+                    IKE negozia automaticamente i parametri di sicurezza e scambia le chiavi crittografiche tra i due peer, creando le <strong>Security Association (SA)</strong>.
+                </Box>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px', marginTop: '16px' }} className="slide-grid">
+                    <Glow color={colors.purple}>
+                        <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>Phase 1 — IKE SA (ISAKMP)</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            Crea un canale sicuro tra i peer per proteggere la negoziazione della Phase 2.
+                        </p>
+                        <ol style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 2, paddingLeft: '20px' }}>
+                            <li><strong style={{ color: colors.text }}>Negoziazione parametri</strong>: algoritmo crittografia, hash, DH group, autenticazione, lifetime</li>
+                            <li><strong style={{ color: colors.text }}>Diffie-Hellman</strong>: scambio chiavi pubbliche → generano shared secret</li>
+                            <li><strong style={{ color: colors.text }}>Autenticazione</strong>: PSK (Pre-Shared Key) o certificati RSA/ECDSA</li>
+                        </ol>
+                        <Box type="tip" title="Modalità">
+                            <strong>Main Mode</strong> (6 messaggi, più sicuro) o <strong>Aggressive Mode</strong> (3 messaggi, più veloce ma meno sicuro)
+                        </Box>
+                    </Glow>
+                    <Glow color={MODULE_COLOR}>
+                        <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>Phase 2 — IPsec SA (Quick Mode)</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            Negozia i parametri per il traffico dati reale, protetta dal tunnel IKE Phase 1.
+                        </p>
+                        <ol style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 2, paddingLeft: '20px' }}>
+                            <li><strong style={{ color: colors.text }}>Transform set</strong>: ESP/AH, algoritmo, modalità</li>
+                            <li><strong style={{ color: colors.text }}>Traffico interessante</strong>: ACL che definisce cosa proteggere</li>
+                            <li><strong style={{ color: colors.text }}>PFS opzionale</strong>: nuovo Diffie-Hellman per Perfect Forward Secrecy</li>
+                        </ol>
+                        <Box type="success" title="Risultato">
+                            Due SA unidirezionali (una per direzione), ognuna con un <strong>SPI</strong> (Security Parameter Index) univoco.
+                        </Box>
+                    </Glow>
+                </div>
+            </div>
+        );
+
+        const SlideSA = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.cyan }}>Security Association</span> e SPI
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="info" title="Cos'è una SA?">
+                            Una <strong>Security Association</strong> è un contratto unidirezionale tra due peer che definisce
+                            come proteggere il traffico: algoritmi, chiavi, lifetime, modalità.
+                        </Box>
+                        <Table
+                            headers={['Parametro', 'Valore esempio']}
+                            rows={[
+                                [<strong style={{ color: colors.cyan }}>SPI</strong>, '0xA3F29B01'],
+                                ['Algoritmo cifratura', 'AES-256-CBC'],
+                                ['Algoritmo hash', 'SHA-256-HMAC'],
+                                ['Chiave cifratura', '256 bit (derivata da DH)'],
+                                ['Chiave HMAC', '256 bit'],
+                                ['Lifetime', '3600 sec / 4.6 GB'],
+                                ['Modalità', 'Tunnel'],
+                                ['Protocollo', 'ESP']
+                            ]}
+                        />
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 450 300" style={{ width: '100%', maxWidth: '450px' }}>
+                            {/* Router A */}
+                            <rect x="20" y="100" width="100" height="80" rx="12" fill={colors.bgCard} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="70" y="135" textAnchor="middle" fill={colors.text} fontSize="24">🔲</text>
+                            <text x="70" y="165" textAnchor="middle" fill={colors.textDim} fontSize="11" fontFamily="Inter">Router A</text>
+
+                            {/* Router B */}
+                            <rect x="330" y="100" width="100" height="80" rx="12" fill={colors.bgCard} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="380" y="135" textAnchor="middle" fill={colors.text} fontSize="24">🔲</text>
+                            <text x="380" y="165" textAnchor="middle" fill={colors.textDim} fontSize="11" fontFamily="Inter">Router B</text>
+
+                            {/* SA 1 (A→B) */}
+                            <line x1="120" y1="125" x2="330" y2="125" stroke={colors.cyan} strokeWidth="2" markerEnd="url(#arrow-cyan)" />
+                            <text x="225" y="118" textAnchor="middle" fill={colors.cyan} fontSize="10" fontWeight="600" fontFamily="Inter">SA 1 (SPI: 0xA3F2) A→B</text>
+
+                            {/* SA 2 (B→A) */}
+                            <line x1="330" y1="155" x2="120" y2="155" stroke={colors.purple} strokeWidth="2" markerEnd="url(#arrow-purple)" />
+                            <text x="225" y="172" textAnchor="middle" fill={colors.purple} fontSize="10" fontWeight="600" fontFamily="Inter">SA 2 (SPI: 0x7B01) B→A</text>
+
+                            {/* Arrows */}
+                            <defs>
+                                <marker id="arrow-cyan" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                                    <path d="M0,0 L8,3 L0,6" fill={colors.cyan} />
+                                </marker>
+                                <marker id="arrow-purple" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto">
+                                    <path d="M0,0 L8,3 L0,6" fill={colors.purple} />
+                                </marker>
+                            </defs>
+
+                            {/* SAD box */}
+                            <rect x="130" y="210" width="190" height="70" rx="10" fill={`${colors.warn}10`} stroke={colors.warn} strokeWidth="1.5" />
+                            <text x="225" y="235" textAnchor="middle" fill={colors.warn} fontSize="12" fontWeight="700" fontFamily="Inter">SAD — SA Database</text>
+                            <text x="225" y="255" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Contiene tutte le SA attive</text>
+                            <text x="225" y="270" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Indicizzato per SPI</text>
+
+                            <text x="225" y="40" textAnchor="middle" fill={colors.textMuted} fontSize="11" fontFamily="Inter">Le SA sono sempre unidirezionali:</text>
+                            <text x="225" y="58" textAnchor="middle" fill={colors.textMuted} fontSize="11" fontFamily="Inter">servono 2 SA per comunicazione bidirezionale</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideConfigCisco = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Configurazione <span style={{ color: MODULE_COLOR }}>IPsec Site-to-Site</span> su Cisco
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                    <div>
+                        <Code title="Step 1: ISAKMP Policy (IKE Phase 1)">
+{`Router(config)# crypto isakmp policy 10
+Router(config-isakmp)# encryption aes 256
+Router(config-isakmp)# hash sha256
+Router(config-isakmp)# authentication pre-share
+Router(config-isakmp)# group 14
+Router(config-isakmp)# lifetime 86400`}</Code>
+                        <Code title="Step 2: Pre-Shared Key">
+{`Router(config)# crypto isakmp key
+  MyS3cr3tK3y! address 203.0.113.2`}</Code>
+                        <Code title="Step 3: Transform Set (ESP Phase 2)">
+{`Router(config)# crypto ipsec transform-set
+  MY-SET esp-aes 256 esp-sha256-hmac
+Router(cfg-crypto-trans)# mode tunnel`}</Code>
+                    </div>
+                    <div>
+                        <Code title="Step 4: ACL traffico interessante">
+{`Router(config)# access-list 100 permit ip
+  192.168.1.0 0.0.0.255
+  10.0.2.0 0.0.0.255`}</Code>
+                        <Code title="Step 5: Crypto Map">
+{`Router(config)# crypto map VPN-MAP 10
+  ipsec-isakmp
+Router(config-crypto-map)# set peer
+  203.0.113.2
+Router(config-crypto-map)# set transform-set
+  MY-SET
+Router(config-crypto-map)# match address 100`}</Code>
+                        <Code title="Step 6: Applica all'interfaccia">
+{`Router(config)# interface GigabitEthernet0/0
+Router(config-if)# crypto map VPN-MAP`}</Code>
+                    </div>
+                </div>
+                <Box type="tip" title="Verifica">
+                    <code style={{ fontFamily: "'JetBrains Mono', monospace" }}>show crypto isakmp sa</code> — Verifica IKE Phase 1<br/>
+                    <code style={{ fontFamily: "'JetBrains Mono', monospace" }}>show crypto ipsec sa</code> — Verifica ESP SA e contatori pacchetti
+                </Box>
+            </div>
+        );
+
+        const SlideDiffieHellman = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.purple }}>Diffie-Hellman</span>: scambio chiavi sicuro
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="info" title="Il problema">
+                            Come possono due peer concordare una chiave segreta comune senza inviarla in chiaro su Internet?
+                        </Box>
+                        <svg viewBox="0 0 440 320" style={{ width: '100%', maxWidth: '440px' }}>
+                            {/* Alice */}
+                            <rect x="10" y="20" width="120" height="50" rx="10" fill={colors.bgCard} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="70" y="50" textAnchor="middle" fill={MODULE_COLOR} fontSize="13" fontWeight="700" fontFamily="Inter">Router A</text>
+
+                            {/* Bob */}
+                            <rect x="310" y="20" width="120" height="50" rx="10" fill={colors.bgCard} stroke={colors.purple} strokeWidth="2" />
+                            <text x="370" y="50" textAnchor="middle" fill={colors.purple} fontSize="13" fontWeight="700" fontFamily="Inter">Router B</text>
+
+                            {/* Step 1 */}
+                            <text x="10" y="100" fill={colors.warn} fontSize="11" fontWeight="700" fontFamily="Inter">1. Parametri pubblici (p, g)</text>
+                            <line x1="70" y1="108" x2="370" y2="108" stroke={colors.warn} strokeWidth="1.5" strokeDasharray="4,3" />
+
+                            {/* Step 2 */}
+                            <text x="10" y="140" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">a = segreto privato</text>
+                            <text x="10" y="156" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">A = g^a mod p</text>
+                            <text x="310" y="140" fill={colors.purple} fontSize="11" fontFamily="Inter">b = segreto privato</text>
+                            <text x="310" y="156" fill={colors.purple} fontSize="11" fontFamily="Inter">B = g^b mod p</text>
+
+                            {/* Step 3: exchange */}
+                            <text x="170" y="185" textAnchor="middle" fill={colors.text} fontSize="11" fontWeight="700" fontFamily="Inter">2. Scambio pubblico</text>
+                            <line x1="70" y1="193" x2="370" y2="193" stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="220" y="203" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter">A →</text>
+                            <line x1="370" y1="213" x2="70" y2="213" stroke={colors.purple} strokeWidth="1.5" />
+                            <text x="220" y="223" textAnchor="middle" fill={colors.purple} fontSize="10" fontFamily="Inter">← B</text>
+
+                            {/* Step 4: compute */}
+                            <text x="10" y="255" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">3. Calcola:</text>
+                            <text x="10" y="272" fill={MODULE_COLOR} fontSize="12" fontWeight="700" fontFamily="JetBrains Mono">K = B^a mod p</text>
+                            <text x="310" y="255" fill={colors.purple} fontSize="11" fontFamily="Inter">3. Calcola:</text>
+                            <text x="310" y="272" fill={colors.purple} fontSize="12" fontWeight="700" fontFamily="JetBrains Mono">K = A^b mod p</text>
+
+                            {/* Result */}
+                            <rect x="120" y="290" width="200" height="30" rx="8" fill={`${colors.success}15`} stroke={colors.success} strokeWidth="2" />
+                            <text x="220" y="310" textAnchor="middle" fill={colors.success} fontSize="12" fontWeight="700" fontFamily="Inter">✅ K identica su entrambi!</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <Box type="success" title="Perché funziona?">
+                            Anche intercettando <strong>p, g, A, B</strong>, calcolare <strong>a</strong> o <strong>b</strong> richiede la risoluzione del <em>problema del logaritmo discreto</em>,
+                            computazionalmente intrattabile per numeri grandi.
+                        </Box>
+                        <Table
+                            headers={['DH Group', 'Bit', 'Sicurezza']}
+                            rows={[
+                                ['Group 1', '768 bit', <span style={{ color: colors.danger }}>❌ Insicuro</span>],
+                                ['Group 2', '1024 bit', <span style={{ color: colors.danger }}>❌ Insicuro</span>],
+                                ['Group 5', '1536 bit', <span style={{ color: colors.warn }}>⚠️ Obsoleto</span>],
+                                ['Group 14', '2048 bit', <span style={{ color: colors.success }}>✅ Minimo consigliato</span>],
+                                ['Group 19', '256-bit ECP', <span style={{ color: colors.success }}>✅ ECDH, veloce e sicuro</span>],
+                                ['Group 21', '521-bit ECP', <span style={{ color: colors.success }}>✅ Massima sicurezza</span>]
+                            ]}
+                        />
+                        <Box type="tip" title="PFS — Perfect Forward Secrecy">
+                            Con PFS attivo, ogni nuova SA IPsec esegue un nuovo scambio DH. Se una chiave viene compromessa,
+                            le sessioni precedenti e future restano protette.
+                        </Box>
+                    </div>
+                </div>
+            </div>
+        );
+
+        // ─── SIMULATORE IKE HANDSHAKE ───
+        const SlideSimIKE = () => {
+            const [step, setStep] = useState(0);
+            const [autoPlay, setAutoPlay] = useState(false);
+
+            const steps = [
+                { phase: 1, label: 'Inizio', desc: 'I due peer devono stabilire un tunnel IPsec. Il processo inizia con IKE Phase 1.', left: 'Router A (Initiator)', right: 'Router B (Responder)', arrow: null, detail: 'Nessun canale sicuro esiste ancora.' },
+                { phase: 1, label: 'Proposal', desc: 'A invia una proposta con i parametri di sicurezza supportati.', left: 'Prepara ISAKMP proposal', right: 'Attende...', arrow: 'right', detail: 'AES-256, SHA-256, DH14, PSK, lifetime 86400s' },
+                { phase: 1, label: 'Accettazione', desc: 'B confronta la proposal con le sue policy e accetta.', left: 'Attende...', right: 'Accetta proposal', arrow: 'left', detail: 'Match trovato: policy 10 corrisponde' },
+                { phase: 1, label: 'Diffie-Hellman', desc: 'Scambio DH per generare la chiave condivisa.', left: 'Genera A = g^a mod p', right: 'Genera B = g^b mod p', arrow: 'both', detail: 'Chiave condivisa K calcolata indipendentemente' },
+                { phase: 1, label: 'Autenticazione', desc: 'I peer si autenticano con la Pre-Shared Key.', left: 'HMAC(PSK, params)', right: 'HMAC(PSK, params)', arrow: 'both', detail: 'Se gli hash corrispondono → identità verificata' },
+                { phase: 1, label: 'IKE SA attiva', desc: 'Phase 1 completata. Canale IKE sicuro stabilito.', left: '✅ IKE SA UP', right: '✅ IKE SA UP', arrow: null, detail: 'Ora Phase 2 è protetta dal tunnel IKE' },
+                { phase: 2, label: 'Quick Mode', desc: 'A propone i parametri per il traffico dati (transform set).', left: 'ESP-AES-256, SHA-256', right: 'Attende...', arrow: 'right', detail: 'Transform set + ACL traffico interessante' },
+                { phase: 2, label: 'Accettazione', desc: 'B accetta e vengono create 2 SA unidirezionali.', left: 'SA (SPI: 0xA3F2)', right: 'SA (SPI: 0x7B01)', arrow: 'both', detail: 'Due SA create: una per direzione' },
+                { phase: 2, label: 'Tunnel attivo!', desc: 'IPsec tunnel operativo. Il traffico interessante viene ora crittografato.', left: '✅ IPsec SA UP', right: '✅ IPsec SA UP', arrow: null, detail: '192.168.1.0/24 ↔ 10.0.2.0/24 protetto' }
+            ];
+
+            useEffect(() => {
+                if (!autoPlay || step >= steps.length - 1) { setAutoPlay(false); return; }
+                const timer = setTimeout(() => setStep(s => s + 1), 2000);
+                return () => clearTimeout(timer);
+            }, [step, autoPlay]);
+
+            const s = steps[step];
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Simulatore: <span style={{ color: MODULE_COLOR }}>IKE Handshake</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Visualizza step-by-step la negoziazione IKE tra due router.
+                    </p>
+
+                    {/* Controls */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
+                        <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.bgLight, color: step === 0 ? colors.textMuted : colors.text, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Prev</button>
+                        <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} disabled={step === steps.length - 1} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: `${MODULE_COLOR}20`, color: step === steps.length - 1 ? colors.textMuted : MODULE_COLOR, cursor: step === steps.length - 1 ? 'default' : 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)', fontWeight: 600 }}>Next →</button>
+                        <button onClick={() => { setStep(0); setAutoPlay(true); }} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.success}`, background: `${colors.success}20`, color: colors.success, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)', fontWeight: 600 }}>▶ Auto Play</button>
+                        <button onClick={() => setStep(0)} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.bgLight, color: colors.textDim, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>⟲ Reset</button>
+                        <span style={{ color: colors.textMuted, fontSize: 'clamp(12px, 1.1vw, 15px)', display: 'flex', alignItems: 'center' }}>Step {step + 1} / {steps.length}</span>
+                    </div>
+
+                    {/* Progress */}
+                    <div style={{ display: 'flex', gap: '3px', marginBottom: '20px' }}>
+                        {steps.map((st, i) => (
+                            <div key={i} onClick={() => setStep(i)} style={{
+                                flex: 1, height: '6px', borderRadius: '3px', cursor: 'pointer',
+                                background: i <= step ? (st.phase === 1 ? colors.purple : MODULE_COLOR) : colors.bgLight,
+                                transition: 'background 0.3s'
+                            }} />
+                        ))}
+                    </div>
+
+                    {/* Visualization */}
+                    <div style={{ background: colors.bgCard, borderRadius: '16px', border: `1px solid ${s.phase === 1 ? colors.purple : MODULE_COLOR}40`, padding: 'clamp(18px, 2vw, 28px)' }}>
+                        {/* Phase badge */}
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <span style={{ padding: '4px 14px', borderRadius: '50px', background: `${s.phase === 1 ? colors.purple : MODULE_COLOR}20`, color: s.phase === 1 ? colors.purple : MODULE_COLOR, fontSize: 'clamp(11px, 1vw, 14px)', fontWeight: 700 }}>
+                                Phase {s.phase} — {s.label}
+                            </span>
+                        </div>
+
+                        <p style={{ color: colors.text, fontSize: 'clamp(14px, 1.3vw, 18px)', fontWeight: 600, marginBottom: '16px' }}>{s.desc}</p>
+
+                        {/* Peer boxes */}
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', alignItems: 'center', marginBottom: '16px' }} className="slide-grid">
+                            <div style={{ padding: '14px', borderRadius: '12px', background: `${MODULE_COLOR}10`, border: `1px solid ${MODULE_COLOR}30`, textAlign: 'center' }}>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)', marginBottom: '6px' }}>Router A</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(11px, 1vw, 14px)' }}>{s.left}</div>
+                            </div>
+                            <div style={{ fontSize: '24px', color: s.arrow === 'right' ? MODULE_COLOR : s.arrow === 'left' ? colors.purple : s.arrow === 'both' ? colors.success : colors.textMuted }}>
+                                {s.arrow === 'right' ? '→' : s.arrow === 'left' ? '←' : s.arrow === 'both' ? '⇄' : '•'}
+                            </div>
+                            <div style={{ padding: '14px', borderRadius: '12px', background: `${colors.purple}10`, border: `1px solid ${colors.purple}30`, textAlign: 'center' }}>
+                                <div style={{ color: colors.purple, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)', marginBottom: '6px' }}>Router B</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(11px, 1vw, 14px)' }}>{s.right}</div>
+                            </div>
+                        </div>
+
+                        {/* Detail */}
+                        <div style={{ padding: '12px', borderRadius: '8px', background: colors.bgLight, color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: "'JetBrains Mono', monospace" }}>
+                            💡 {s.detail}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        // ─── SIMULATORE AH vs ESP ───
+        const SlideSimAHESP = () => {
+            const [protocol, setProtocol] = useState('esp');
+            const [mode, setMode] = useState('tunnel');
+
+            const protocolData = {
+                ah: {
+                    color: colors.warn, label: 'AH',
+                    segments: mode === 'tunnel' ?
+                        [{ label: 'New IP', w: 60, color: colors.success, protected: true }, { label: 'AH Hdr', w: 60, color: colors.warn, protected: true }, { label: 'IP orig.', w: 70, color: colors.accentAlt, protected: true }, { label: 'Payload', w: 120, color: colors.text, protected: true }] :
+                        [{ label: 'IP orig.', w: 80, color: colors.accentAlt, protected: true }, { label: 'AH Hdr', w: 60, color: colors.warn, protected: true }, { label: 'Payload', w: 150, color: colors.text, protected: true }]
+                },
+                esp: {
+                    color: MODULE_COLOR, label: 'ESP',
+                    segments: mode === 'tunnel' ?
+                        [{ label: 'New IP', w: 55, color: colors.success, protected: false }, { label: 'ESP', w: 45, color: MODULE_COLOR, protected: false }, { label: 'IP orig.', w: 65, color: colors.danger, protected: true, encrypted: true }, { label: 'Payload', w: 100, color: colors.danger, protected: true, encrypted: true }, { label: 'Trl', w: 35, color: colors.purple, protected: true, encrypted: true }] :
+                        [{ label: 'IP orig.', w: 70, color: colors.accentAlt, protected: false }, { label: 'ESP', w: 45, color: MODULE_COLOR, protected: false }, { label: 'Payload', w: 130, color: colors.danger, protected: true, encrypted: true }, { label: 'Trl', w: 35, color: colors.purple, protected: true, encrypted: true }]
+                }
+            };
+
+            const d = protocolData[protocol];
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Simulatore: <span style={{ color: colors.warn }}>AH</span> vs <span style={{ color: MODULE_COLOR }}>ESP</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Confronta visivamente cosa viene protetto da AH e ESP in modalità Transport e Tunnel.
+                    </p>
+
+                    {/* Controls */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '20px' }}>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => setProtocol('ah')} style={{ padding: '8px 18px', borderRadius: '8px', border: `2px solid ${protocol === 'ah' ? colors.warn : colors.border}`, background: protocol === 'ah' ? `${colors.warn}20` : colors.bgCard, color: protocol === 'ah' ? colors.warn : colors.textDim, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(13px, 1.2vw, 16px)', fontWeight: 600 }}>🔍 AH</button>
+                            <button onClick={() => setProtocol('esp')} style={{ padding: '8px 18px', borderRadius: '8px', border: `2px solid ${protocol === 'esp' ? MODULE_COLOR : colors.border}`, background: protocol === 'esp' ? `${MODULE_COLOR}20` : colors.bgCard, color: protocol === 'esp' ? MODULE_COLOR : colors.textDim, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(13px, 1.2vw, 16px)', fontWeight: 600 }}>🔒 ESP</button>
+                        </div>
+                        <div style={{ display: 'flex', gap: '6px' }}>
+                            <button onClick={() => setMode('transport')} style={{ padding: '8px 18px', borderRadius: '8px', border: `2px solid ${mode === 'transport' ? colors.cyan : colors.border}`, background: mode === 'transport' ? `${colors.cyan}20` : colors.bgCard, color: mode === 'transport' ? colors.cyan : colors.textDim, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(13px, 1.2vw, 16px)', fontWeight: 600 }}>Transport</button>
+                            <button onClick={() => setMode('tunnel')} style={{ padding: '8px 18px', borderRadius: '8px', border: `2px solid ${mode === 'tunnel' ? colors.purple : colors.border}`, background: mode === 'tunnel' ? `${colors.purple}20` : colors.bgCard, color: mode === 'tunnel' ? colors.purple : colors.textDim, cursor: 'pointer', fontFamily: 'Inter', fontSize: 'clamp(13px, 1.2vw, 16px)', fontWeight: 600 }}>Tunnel</button>
+                        </div>
+                    </div>
+
+                    {/* Packet visualization */}
+                    <div style={{ background: colors.bgCard, borderRadius: '16px', border: `1px solid ${d.color}40`, padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <h3 style={{ color: d.color, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '16px' }}>
+                            {d.label} — Modalità {mode === 'tunnel' ? 'Tunnel' : 'Transport'}
+                        </h3>
+
+                        <svg viewBox="0 0 500 140" style={{ width: '100%', maxWidth: '600px', marginBottom: '16px' }}>
+                            {/* Packet segments */}
+                            {(() => {
+                                let x = 20;
+                                const totalW = d.segments.reduce((a, s) => a + s.w, 0);
+                                const scale = 460 / totalW;
+                                return d.segments.map((seg, i) => {
+                                    const w = seg.w * scale;
+                                    const el = (
+                                        <g key={i}>
+                                            <rect x={x} y="20" width={w} height="50" rx="6"
+                                                fill={seg.encrypted ? `${seg.color}15` : `${seg.color}20`}
+                                                stroke={seg.color} strokeWidth="2"
+                                                strokeDasharray={seg.encrypted ? '6,3' : 'none'} />
+                                            <text x={x + w / 2} y="42" textAnchor="middle" fill={seg.color} fontSize="11" fontWeight="600" fontFamily="Inter">
+                                                {seg.encrypted ? '🔒 ' : ''}{seg.label}
+                                            </text>
+                                            {seg.encrypted && <text x={x + w / 2} y="58" textAnchor="middle" fill={colors.textMuted} fontSize="8" fontFamily="Inter">cifrato</text>}
+                                        </g>
+                                    );
+                                    x += w + 2;
+                                    return el;
+                                });
+                            })()}
+
+                            {/* Auth coverage */}
+                            {protocol === 'ah' && (
+                                <>
+                                    <line x1="20" y1="85" x2="480" y2="85" stroke={colors.warn} strokeWidth="2" />
+                                    <text x="250" y="100" textAnchor="middle" fill={colors.warn} fontSize="11" fontWeight="600" fontFamily="Inter">← Autenticazione HMAC (intero pacchetto) →</text>
+                                    <text x="250" y="118" textAnchor="middle" fill={colors.danger} fontSize="10" fontFamily="Inter">⚠️ Nessuna crittografia — payload leggibile!</text>
+                                </>
+                            )}
+                            {protocol === 'esp' && (
+                                <>
+                                    {(() => {
+                                        const segs = d.segments;
+                                        const totalW = segs.reduce((a, s) => a + s.w, 0);
+                                        const scale = 460 / totalW;
+                                        const encStart = 20 + segs.slice(0, 2).reduce((a, s) => a + s.w * scale + 2, 0);
+                                        return (
+                                            <>
+                                                <line x1={encStart} y1="85" x2="480" y2="85" stroke={colors.danger} strokeWidth="2" />
+                                                <text x={(encStart + 480) / 2} y="100" textAnchor="middle" fill={colors.danger} fontSize="11" fontWeight="600" fontFamily="Inter">← Area crittografata →</text>
+                                                <line x1={encStart - segs[1].w * scale - 2} y1="115" x2="480" y2="115" stroke={MODULE_COLOR} strokeWidth="1.5" strokeDasharray="4,3" />
+                                                <text x="250" y="130" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter">← Autenticazione HMAC →</text>
+                                            </>
+                                        );
+                                    })()}
+                                </>
+                            )}
+                        </svg>
+
+                        {/* Summary */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(180px, 1fr))', gap: '12px' }} className="slide-grid">
+                            <div style={{ padding: '12px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: d.color, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>Crittografia</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{protocol === 'esp' ? '✅ Payload cifrato' : '❌ Nessuna'}</div>
+                            </div>
+                            <div style={{ padding: '12px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: d.color, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>Autenticazione</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{protocol === 'ah' ? '✅ Tutto (incluso IP)' : '✅ ESP header + payload'}</div>
+                            </div>
+                            <div style={{ padding: '12px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: d.color, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>NAT Traversal</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{protocol === 'esp' ? '✅ NAT-T (UDP 4500)' : '❌ Incompatibile'}</div>
+                            </div>
+                            <div style={{ padding: '12px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: d.color, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>IP originale</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{mode === 'tunnel' ? '🔒 Nascosto nel tunnel' : '👁️ Visibile'}</div>
+                            </div>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SlideBestPractices = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Best Practices e <span style={{ color: MODULE_COLOR }}>Riepilogo</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
+                    <Box type="success" title="Configurazione IPsec consigliata">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {[
+                                'ESP in modalità Tunnel (site-to-site)',
+                                'AES-256 per crittografia',
+                                'SHA-256 o SHA-384 per HMAC',
+                                'DH Group 14+ (o ECDH Group 19+)',
+                                'PFS abilitato (nuova DH in Phase 2)',
+                                'IKEv2 invece di IKEv1',
+                                'Certificati RSA/ECDSA > PSK'
+                            ].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.success }}>✓</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                    <Box type="danger" title="Da evitare">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {[
+                                'DES / 3DES (crittografia debole)',
+                                'MD5 / SHA-1 per HMAC',
+                                'DH Group 1-2 (768/1024 bit)',
+                                'Aggressive Mode senza protezione',
+                                'PSK deboli o condivise via email',
+                                'Lifetime troppo lunghi (>24h)'
+                            ].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.danger }}>✗</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                </div>
+                <Glow>
+                    <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>📋 Riepilogo Modulo 2</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }} className="slide-grid">
+                        {[
+                            { label: 'IPsec', value: 'Suite L3: AH, ESP, IKE' },
+                            { label: 'AH vs ESP', value: 'AH: solo auth. ESP: crittografia + auth' },
+                            { label: 'Modalità', value: 'Transport (host) vs Tunnel (gateway)' },
+                            { label: 'IKE', value: 'Phase 1 (canale sicuro) + Phase 2 (SA dati)' },
+                            { label: 'DH', value: 'Scambio chiavi sicuro, minimo Group 14' },
+                            { label: 'Prossimo', value: 'Modulo 3: SSL/TLS e OpenVPN →' }
+                        ].map((item, i) => (
+                            <div key={i} style={{ padding: '10px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>{item.label}</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </Glow>
+            </div>
+        );
+
+        // ─── SLIDE ARRAY ───
+        const slides = [
+            SlideTitolo,
+            SlideArchitettura,
+            SlideAHvsESP,
+            SlideModalita,
+            SlideIKE,
+            SlideSA,
+            SlideDiffieHellman,
+            SlideConfigCisco,
+            SlideSimIKE,
+            SlideSimAHESP,
+            SlideBestPractices
+        ];
+
+        // ─── APP ───
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const total = slides.length;
+
+            const goNext = useCallback(() => setCurrentSlide(s => Math.min(s + 1, total - 1)), [total]);
+            const goPrev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
+            const goIndex = useCallback(() => { window.location.href = 'index.html'; }, []);
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+                    if (e.key === 'Escape') goIndex();
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [goNext, goPrev, goIndex]);
+
+            const SlideComponent = slides[currentSlide];
+
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                    {/* Top bar */}
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <a href="index.html" style={{ color: colors.textDim, textDecoration: 'none', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Indice</a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>M{MODULE_NUM}</span>
+                            <span style={{ color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{MODULE_TITLE}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 14px)' }}>{currentSlide + 1} / {total}</span>
+                            <div style={{ width: '80px', height: '4px', background: colors.bgLight, borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${((currentSlide + 1) / total) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '2px', transition: 'width 0.3s' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{ flex: 1, maxWidth: '2200px', width: '94%', margin: '0 auto', padding: '70px 0 80px' }}>
+                        <SlideComponent />
+                    </div>
+
+                    {/* Bottom bar */}
+                    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderTop: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button onClick={goPrev} disabled={currentSlide === 0} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: currentSlide === 0 ? 'transparent' : colors.bgLight, color: currentSlide === 0 ? colors.textMuted : colors.text, cursor: currentSlide === 0 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter' }}>← Indietro</button>
+                        <div style={{ display: 'flex', gap: '16px', fontSize: 'clamp(11px, 1vw, 14px)' }}>
+                            {currentSlide === 0 && PREV_MODULE && <a href={PREV_MODULE.file} style={{ color: colors.textMuted, textDecoration: 'none' }}>← {PREV_MODULE.title}</a>}
+                            {currentSlide === total - 1 && NEXT_MODULE && <a href={NEXT_MODULE.file} style={{ color: MODULE_COLOR, textDecoration: 'none', fontWeight: 600 }}>{NEXT_MODULE.title} →</a>}
+                        </div>
+                        <button onClick={goNext} disabled={currentSlide === total - 1} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: currentSlide === total - 1 ? 'transparent' : `${MODULE_COLOR}20`, color: currentSlide === total - 1 ? colors.textMuted : MODULE_COLOR, cursor: currentSlide === total - 1 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600 }}>Avanti →</button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

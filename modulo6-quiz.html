@@ -1,0 +1,621 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulo 6 - Quiz e Riepilogo</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } .slide-grid { grid-template-columns: 1fr !important; } svg { max-width: 100% !important; } pre { white-space: pre-wrap !important; word-break: break-all !important; } }
+        @media (max-width: 480px) { html { font-size: 13px; } button { width: 100% !important; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#ef4444', accentAlt: '#0ea5e9',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const MODULE_NUM = 6;
+        const MODULE_TITLE = 'Quiz e Riepilogo';
+        const MODULE_COLOR = '#ef4444';
+        const PREV_MODULE = { title: 'Scenari Pratici e Lab', file: 'modulo5-scenari-pratici.html' };
+
+        const Box = ({ type, title, children }) => {
+            const colorMap = { info: colors.info, warn: colors.warn, danger: colors.danger, success: colors.success, tip: MODULE_COLOR };
+            const iconMap = { info: 'ℹ️', warn: '⚠️', danger: '❌', success: '✅', tip: '💡' };
+            return (
+                <div style={{ borderLeft: `4px solid ${colorMap[type] || colors.info}`, padding: 'clamp(14px, 1.5vw, 20px)', margin: '16px 0', borderRadius: '0 12px 12px 0', background: colors.bgCard }}>
+                    {title && <div style={{ color: colorMap[type], fontWeight: 700, marginBottom: '8px', fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{iconMap[type]} {title}</div>}
+                    <div style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{children}</div>
+                </div>
+            );
+        };
+
+        const Glow = ({ children, color }) => (
+            <div style={{ border: `2px solid ${color || MODULE_COLOR}`, borderRadius: '16px', padding: 'clamp(16px, 2vw, 24px)', boxShadow: `0 0 25px ${(color || MODULE_COLOR)}30`, background: colors.bgCard }}>{children}</div>
+        );
+
+        // ─── SLIDE ───
+        const SlideTitolo = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', gap: '20px' }}>
+                <div style={{ fontSize: '72px' }}>✅</div>
+                <div style={{ fontSize: 'clamp(12px, 1.1vw, 15px)', color: MODULE_COLOR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Modulo {MODULE_NUM}</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 4vw, 68px)', fontWeight: 700, background: `linear-gradient(135deg, ${MODULE_COLOR}, ${colors.warn})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {MODULE_TITLE}
+                </h1>
+                <p style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: colors.textDim, maxWidth: '600px' }}>
+                    15 domande per verificare le tue conoscenze sulle VPN
+                </p>
+            </div>
+        );
+
+        // ─── QUIZ ───
+        const SlideQuiz = () => {
+            const questions = [
+                {
+                    q: 'Qual è la funzione principale di una VPN?',
+                    options: ['Velocizzare la connessione Internet', 'Creare un tunnel sicuro e crittografato su rete pubblica', 'Sostituire il firewall aziendale', 'Aumentare la banda disponibile'],
+                    correct: 1,
+                    explanation: 'Una VPN crea un collegamento sicuro e crittografato attraverso Internet, simulando una connessione privata dedicata.',
+                    module: 1
+                },
+                {
+                    q: 'Quale protocollo VPN è considerato obsoleto e insicuro?',
+                    options: ['WireGuard', 'IPsec', 'PPTP', 'OpenVPN'],
+                    correct: 2,
+                    explanation: 'PPTP usa crittografia MPPE che è stata violata. Non deve mai essere usato per dati sensibili.',
+                    module: 1
+                },
+                {
+                    q: 'In IPsec, qual è la differenza principale tra AH e ESP?',
+                    options: ['AH è più veloce di ESP', 'AH critta i dati, ESP no', 'ESP fornisce crittografia, AH solo autenticazione', 'Non c\'è differenza'],
+                    correct: 2,
+                    explanation: 'ESP (Encapsulating Security Payload) fornisce crittografia + autenticazione. AH (Authentication Header) fornisce solo autenticazione e integrità, senza crittografia.',
+                    module: 2
+                },
+                {
+                    q: 'Perché AH è incompatibile con il NAT?',
+                    options: ['Usa troppe risorse', 'Il NAT modifica l\'IP header, invalidando l\'HMAC di AH', 'AH non supporta IPv4', 'Il NAT blocca il protocollo 51'],
+                    correct: 1,
+                    explanation: 'AH calcola l\'HMAC sull\'intero pacchetto incluso l\'IP header. Quando il NAT modifica l\'IP sorgente, l\'hash non corrisponde più.',
+                    module: 2
+                },
+                {
+                    q: 'A cosa serve IKE (Internet Key Exchange)?',
+                    options: ['Crittografare i pacchetti dati', 'Negoziare parametri di sicurezza e scambiare chiavi', 'Instradare i pacchetti nel tunnel', 'Comprimere i dati prima della crittografia'],
+                    correct: 1,
+                    explanation: 'IKE negozia automaticamente i parametri di sicurezza (algoritmi, chiavi, lifetime) tra i due peer IPsec, creando le Security Association.',
+                    module: 2
+                },
+                {
+                    q: 'Quale modalità IPsec nasconde gli IP originali?',
+                    options: ['Transport Mode', 'Tunnel Mode', 'Aggressive Mode', 'Main Mode'],
+                    correct: 1,
+                    explanation: 'In Tunnel Mode un nuovo header IP viene aggiunto e l\'intero pacchetto originale (IP + payload) viene crittografato, nascondendo gli IP originali.',
+                    module: 2
+                },
+                {
+                    q: 'Qual è il vantaggio principale di SSL/TLS VPN rispetto a IPsec?',
+                    options: ['Crittografia più forte', 'Attraversa facilmente i firewall (porta 443)', 'Maggiore velocità', 'Non richiede crittografia'],
+                    correct: 1,
+                    explanation: 'SSL/TLS VPN opera su porta TCP 443 (HTTPS), che è praticamente sempre aperta nei firewall aziendali, a differenza delle porte IPsec spesso bloccate.',
+                    module: 3
+                },
+                {
+                    q: 'In OpenVPN, qual è la differenza tra TUN e TAP?',
+                    options: ['TUN è più sicuro di TAP', 'TUN opera a L3 (routing), TAP a L2 (bridging)', 'TAP è più veloce di TUN', 'Non c\'è differenza pratica'],
+                    correct: 1,
+                    explanation: 'TUN crea un\'interfaccia punto-punto L3 per routing IP (più comune). TAP crea un\'interfaccia Ethernet L2 per bridging, necessaria per broadcast/multicast.',
+                    module: 3
+                },
+                {
+                    q: 'Perché la chiave privata della CA deve essere protetta offline?',
+                    options: ['Perché è molto grande', 'Se compromessa, l\'attaccante può generare certificati validi', 'Per risparmiare spazio su disco', 'Per velocizzare le connessioni'],
+                    correct: 1,
+                    explanation: 'La chiave privata della CA è il cuore della PKI. Chi la possiede può firmare certificati validi per qualsiasi client, compromettendo l\'intera infrastruttura VPN.',
+                    module: 3
+                },
+                {
+                    q: 'Quante righe di codice ha circa WireGuard?',
+                    options: ['~400.000', '~100.000', '~40.000', '~4.000'],
+                    correct: 3,
+                    explanation: 'WireGuard ha circa 4.000 righe di codice, contro ~100.000 di OpenVPN e ~400.000 di IPsec (StrongSwan). Meno codice significa meno bug e più facile da verificare.',
+                    module: 4
+                },
+                {
+                    q: 'Quale algoritmo di crittografia usa WireGuard?',
+                    options: ['AES-256-CBC', 'ChaCha20-Poly1305', 'Blowfish-CBC', '3DES'],
+                    correct: 1,
+                    explanation: 'WireGuard usa uno stack crittografico fisso: ChaCha20-Poly1305 per AEAD, Curve25519 per key exchange, BLAKE2s per hashing.',
+                    module: 4
+                },
+                {
+                    q: 'Cosa significa "split tunneling"?',
+                    options: ['Dividere il tunnel in due parti', 'Solo il traffico aziendale passa per la VPN, il resto va diretto', 'Usare due VPN contemporaneamente', 'Crittografare i dati due volte'],
+                    correct: 1,
+                    explanation: 'Con split tunneling, solo il traffico verso la rete aziendale passa per il tunnel VPN. Il traffico verso Internet va direttamente, risparmiando banda.',
+                    module: 5
+                },
+                {
+                    q: 'In una VPN Site-to-Site, cosa è essenziale che le due sedi NON abbiano?',
+                    options: ['Lo stesso ISP', 'Lo stesso protocollo VPN', 'Subnet IP sovrapposte', 'Lo stesso sistema operativo'],
+                    correct: 2,
+                    explanation: 'Se le due sedi hanno la stessa subnet (es. entrambe 192.168.1.0/24), il routing diventa ambiguo e il tunnel non funziona correttamente.',
+                    module: 5
+                },
+                {
+                    q: 'Quale comando WireGuard attiva l\'interfaccia VPN?',
+                    options: ['wireguard start wg0', 'wg-quick up wg0', 'systemctl start vpn', 'wg connect wg0'],
+                    correct: 1,
+                    explanation: 'wg-quick è il tool che legge il file di configurazione e attiva l\'interfaccia WireGuard con tutti i parametri (IP, routing, peers).',
+                    module: 4
+                },
+                {
+                    q: 'Qual è la causa più comune di "tunnel attivo ma nessun traffico"?',
+                    options: ['Certificato scaduto', 'Routing mancante verso la subnet remota', 'Porta UDP chiusa', 'Password errata'],
+                    correct: 1,
+                    explanation: 'Se il tunnel è stabilito ma non passa traffico, la causa più comune è un routing mancante: il sistema non sa che deve inviare i pacchetti verso la subnet remota attraverso il tunnel.',
+                    module: 5
+                }
+            ];
+
+            const [currentQ, setCurrentQ] = useState(0);
+            const [selected, setSelected] = useState(null);
+            const [answered, setAnswered] = useState(false);
+            const [score, setScore] = useState(0);
+            const [answers, setAnswers] = useState([]);
+            const [showResults, setShowResults] = useState(false);
+
+            const q = questions[currentQ];
+
+            const handleAnswer = (idx) => {
+                if (answered) return;
+                setSelected(idx);
+                setAnswered(true);
+                const isCorrect = idx === q.correct;
+                if (isCorrect) setScore(s => s + 1);
+                setAnswers(a => [...a, { question: currentQ, selected: idx, correct: q.correct, isCorrect }]);
+            };
+
+            const handleNext = () => {
+                if (currentQ < questions.length - 1) {
+                    setCurrentQ(c => c + 1);
+                    setSelected(null);
+                    setAnswered(false);
+                } else {
+                    setShowResults(true);
+                }
+            };
+
+            const handleReset = () => {
+                setCurrentQ(0);
+                setSelected(null);
+                setAnswered(false);
+                setScore(0);
+                setAnswers([]);
+                setShowResults(false);
+            };
+
+            if (showResults) {
+                const pct = Math.round((score / questions.length) * 100);
+                const grade = pct >= 90 ? { label: 'Eccellente!', color: colors.success, emoji: '🏆' } :
+                              pct >= 70 ? { label: 'Buono!', color: colors.info, emoji: '👍' } :
+                              pct >= 50 ? { label: 'Sufficiente', color: colors.warn, emoji: '📚' } :
+                              { label: 'Da ripassare', color: colors.danger, emoji: '📖' };
+
+                return (
+                    <div>
+                        <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px', textAlign: 'center' }}>
+                            Risultati Quiz
+                        </h2>
+                        <div style={{ textAlign: 'center', marginBottom: '30px' }}>
+                            <div style={{ fontSize: '64px', marginBottom: '12px' }}>{grade.emoji}</div>
+                            <div style={{ fontSize: 'clamp(36px, 4vw, 60px)', fontWeight: 700, color: grade.color, fontFamily: "'Space Grotesk', sans-serif" }}>{score} / {questions.length}</div>
+                            <div style={{ fontSize: 'clamp(18px, 2vw, 28px)', color: grade.color, fontWeight: 600, marginTop: '8px' }}>{grade.label} ({pct}%)</div>
+                        </div>
+
+                        {/* Progress bar */}
+                        <div style={{ maxWidth: '500px', margin: '0 auto 30px', height: '12px', background: colors.bgLight, borderRadius: '6px', overflow: 'hidden' }}>
+                            <div style={{ width: `${pct}%`, height: '100%', background: `linear-gradient(90deg, ${grade.color}80, ${grade.color})`, borderRadius: '6px' }} />
+                        </div>
+
+                        {/* Review */}
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fill, minmax(60px, 1fr))', gap: '8px', maxWidth: '600px', margin: '0 auto 24px' }}>
+                            {answers.map((a, i) => (
+                                <div key={i} style={{
+                                    padding: '8px', borderRadius: '8px', textAlign: 'center',
+                                    background: a.isCorrect ? `${colors.success}20` : `${colors.danger}20`,
+                                    border: `2px solid ${a.isCorrect ? colors.success : colors.danger}40`,
+                                    color: a.isCorrect ? colors.success : colors.danger,
+                                    fontSize: 'clamp(12px, 1.1vw, 15px)', fontWeight: 700
+                                }}>
+                                    {a.isCorrect ? '✓' : '✗'} {i + 1}
+                                </div>
+                            ))}
+                        </div>
+
+                        {/* Mistakes review */}
+                        {answers.filter(a => !a.isCorrect).length > 0 && (
+                            <div style={{ maxWidth: '700px', margin: '0 auto' }}>
+                                <h3 style={{ color: colors.danger, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>Risposte errate:</h3>
+                                {answers.filter(a => !a.isCorrect).map((a, i) => (
+                                    <div key={i} style={{ background: colors.bgCard, borderRadius: '12px', border: `1px solid ${colors.danger}30`, padding: '14px', marginBottom: '12px' }}>
+                                        <div style={{ color: colors.text, fontSize: 'clamp(13px, 1.2vw, 16px)', fontWeight: 600, marginBottom: '6px' }}>
+                                            D{a.question + 1}: {questions[a.question].q}
+                                        </div>
+                                        <div style={{ color: colors.danger, fontSize: 'clamp(12px, 1.1vw, 14px)' }}>
+                                            Tua risposta: {questions[a.question].options[a.selected]}
+                                        </div>
+                                        <div style={{ color: colors.success, fontSize: 'clamp(12px, 1.1vw, 14px)' }}>
+                                            Corretta: {questions[a.question].options[a.correct]}
+                                        </div>
+                                        <div style={{ color: colors.textDim, fontSize: 'clamp(11px, 1vw, 13px)', marginTop: '4px', fontStyle: 'italic' }}>
+                                            {questions[a.question].explanation}
+                                        </div>
+                                    </div>
+                                ))}
+                            </div>
+                        )}
+
+                        <div style={{ textAlign: 'center', marginTop: '20px' }}>
+                            <button onClick={handleReset} style={{
+                                padding: '12px 30px', borderRadius: '10px', border: `2px solid ${MODULE_COLOR}`,
+                                background: `${MODULE_COLOR}20`, color: MODULE_COLOR, cursor: 'pointer',
+                                fontSize: 'clamp(14px, 1.3vw, 18px)', fontFamily: 'Inter', fontWeight: 700
+                            }}>🔄 Riprova Quiz</button>
+                        </div>
+                    </div>
+                );
+            }
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Quiz <span style={{ color: MODULE_COLOR }}>Interattivo</span>
+                    </h2>
+
+                    {/* Progress */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '12px', marginBottom: '20px' }}>
+                        <span style={{ color: colors.textMuted, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>
+                            Domanda {currentQ + 1} / {questions.length}
+                        </span>
+                        <div style={{ flex: 1, height: '6px', background: colors.bgLight, borderRadius: '3px', overflow: 'hidden' }}>
+                            <div style={{ width: `${((currentQ + 1) / questions.length) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '3px', transition: 'width 0.3s' }} />
+                        </div>
+                        <span style={{ color: colors.success, fontSize: 'clamp(12px, 1.1vw, 15px)', fontWeight: 600 }}>
+                            {score} ✓
+                        </span>
+                    </div>
+
+                    {/* Module badge */}
+                    <span style={{
+                        display: 'inline-block', padding: '3px 10px', borderRadius: '50px', marginBottom: '14px',
+                        background: `${colors.info}15`, border: `1px solid ${colors.info}30`, color: colors.info,
+                        fontSize: 'clamp(10px, 0.9vw, 13px)', fontWeight: 600
+                    }}>
+                        Modulo {q.module}
+                    </span>
+
+                    {/* Question */}
+                    <div style={{ background: colors.bgCard, borderRadius: '16px', border: `1px solid ${colors.border}`, padding: 'clamp(18px, 2vw, 28px)', marginBottom: '20px' }}>
+                        <h3 style={{ color: colors.text, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 600, marginBottom: '20px', lineHeight: 1.5 }}>
+                            {q.q}
+                        </h3>
+
+                        <div style={{ display: 'grid', gap: '10px' }}>
+                            {q.options.map((opt, i) => {
+                                let bg = colors.bgLight;
+                                let borderColor = colors.border;
+                                let textColor = colors.textDim;
+
+                                if (answered) {
+                                    if (i === q.correct) {
+                                        bg = `${colors.success}15`;
+                                        borderColor = colors.success;
+                                        textColor = colors.success;
+                                    } else if (i === selected && i !== q.correct) {
+                                        bg = `${colors.danger}15`;
+                                        borderColor = colors.danger;
+                                        textColor = colors.danger;
+                                    }
+                                } else if (i === selected) {
+                                    borderColor = MODULE_COLOR;
+                                }
+
+                                return (
+                                    <button key={i} onClick={() => handleAnswer(i)} style={{
+                                        display: 'flex', alignItems: 'center', gap: '12px',
+                                        padding: 'clamp(12px, 1.3vw, 18px)',
+                                        borderRadius: '12px',
+                                        border: `2px solid ${borderColor}`,
+                                        background: bg,
+                                        color: textColor,
+                                        cursor: answered ? 'default' : 'pointer',
+                                        fontSize: 'clamp(13px, 1.2vw, 17px)',
+                                        fontFamily: 'Inter',
+                                        textAlign: 'left',
+                                        transition: 'all 0.2s',
+                                        width: '100%'
+                                    }}>
+                                        <span style={{
+                                            width: '28px', height: '28px', borderRadius: '50%',
+                                            display: 'flex', alignItems: 'center', justifyContent: 'center',
+                                            background: answered && i === q.correct ? colors.success : answered && i === selected ? colors.danger : `${MODULE_COLOR}20`,
+                                            color: answered && (i === q.correct || i === selected) ? '#fff' : MODULE_COLOR,
+                                            fontWeight: 700, fontSize: '13px', flexShrink: 0
+                                        }}>
+                                            {answered && i === q.correct ? '✓' : answered && i === selected ? '✗' : String.fromCharCode(65 + i)}
+                                        </span>
+                                        {opt}
+                                    </button>
+                                );
+                            })}
+                        </div>
+
+                        {/* Explanation */}
+                        {answered && (
+                            <div style={{
+                                marginTop: '16px', padding: '14px', borderRadius: '10px',
+                                background: selected === q.correct ? `${colors.success}10` : `${colors.danger}10`,
+                                border: `1px solid ${selected === q.correct ? colors.success : colors.danger}30`
+                            }}>
+                                <div style={{ color: selected === q.correct ? colors.success : colors.danger, fontWeight: 700, marginBottom: '6px', fontSize: 'clamp(13px, 1.2vw, 16px)' }}>
+                                    {selected === q.correct ? '✅ Corretto!' : '❌ Sbagliato'}
+                                </div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>
+                                    {q.explanation}
+                                </div>
+                            </div>
+                        )}
+                    </div>
+
+                    {/* Next button */}
+                    {answered && (
+                        <div style={{ textAlign: 'center' }}>
+                            <button onClick={handleNext} style={{
+                                padding: '12px 30px', borderRadius: '10px', border: `2px solid ${MODULE_COLOR}`,
+                                background: `${MODULE_COLOR}20`, color: MODULE_COLOR, cursor: 'pointer',
+                                fontSize: 'clamp(14px, 1.3vw, 18px)', fontFamily: 'Inter', fontWeight: 700
+                            }}>
+                                {currentQ < questions.length - 1 ? 'Prossima domanda →' : '📊 Vedi risultati'}
+                            </button>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SlideRiepilogo = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Riepilogo <span style={{ color: MODULE_COLOR }}>completo</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '16px' }} className="slide-grid">
+                    {[
+                        { num: 1, title: 'Fondamenti VPN', color: '#00d4aa', items: ['VPN = tunnel privato su rete pubblica', 'Pilastri: tunneling, crittografia, autenticazione, integrità', 'Tipi: Site-to-Site, Remote Access, Mesh', 'Protegge da sniffing, MITM, DNS spoofing'] },
+                        { num: 2, title: 'IPsec', color: '#0ea5e9', items: ['AH (solo auth) vs ESP (critta + auth)', 'Transport Mode vs Tunnel Mode', 'IKE Phase 1 (canale sicuro) + Phase 2 (SA dati)', 'Diffie-Hellman per scambio chiavi'] },
+                        { num: 3, title: 'SSL/TLS e OpenVPN', color: '#f59e0b', items: ['Porta 443 = attraversa ogni firewall', 'TUN (L3 routing) vs TAP (L2 bridge)', 'PKI: CA → server cert → client cert → CRL', 'tls-auth/tls-crypt per anti-DoS'] },
+                        { num: 4, title: 'WireGuard', color: '#a78bfa', items: ['~4000 righe, kernel-level, 1-RTT handshake', 'ChaCha20-Poly1305 + Curve25519', 'Nessuna negoziazione cipher (stack fisso)', 'Roaming trasparente, eccellente su mobile'] },
+                        { num: 5, title: 'Scenari Pratici', color: '#22d3ee', items: ['Site-to-Site: IPsec o WireGuard tra gateway', 'Remote Access: OpenVPN o WireGuard + MFA', 'Split vs Full tunneling', 'Troubleshooting: routing, MTU, keepalive'] }
+                    ].map((mod, i) => (
+                        <div key={i} style={{ background: colors.bgCard, border: `1px solid ${mod.color}30`, borderRadius: '12px', padding: 'clamp(14px, 1.5vw, 20px)' }}>
+                            <div style={{ display: 'flex', gap: '10px', alignItems: 'center', marginBottom: '10px' }}>
+                                <span style={{ padding: '2px 10px', borderRadius: '50px', background: `${mod.color}20`, color: mod.color, fontSize: 'clamp(11px, 1vw, 13px)', fontWeight: 700 }}>M{mod.num}</span>
+                                <span style={{ color: mod.color, fontWeight: 700, fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{mod.title}</span>
+                            </div>
+                            {mod.items.map((item, j) => (
+                                <div key={j} style={{ display: 'flex', gap: '8px', marginBottom: '5px', color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 14px)' }}>
+                                    <span style={{ color: mod.color, flexShrink: 0 }}>•</span> {item}
+                                </div>
+                            ))}
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const SlideDecisionTree = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Quale VPN <span style={{ color: MODULE_COLOR }}>scegliere</span>?
+                </h2>
+                <svg viewBox="0 0 700 420" style={{ width: '100%', maxWidth: '800px', margin: '0 auto', display: 'block' }}>
+                    {/* Start */}
+                    <rect x="260" y="10" width="180" height="40" rx="20" fill={`${MODULE_COLOR}20`} stroke={MODULE_COLOR} strokeWidth="2" />
+                    <text x="350" y="35" textAnchor="middle" fill={MODULE_COLOR} fontSize="13" fontWeight="700" fontFamily="Inter">Tipo di connessione?</text>
+
+                    {/* Branches */}
+                    <line x1="290" y1="50" x2="150" y2="85" stroke={colors.textMuted} strokeWidth="1.5" />
+                    <line x1="350" y1="50" x2="350" y2="85" stroke={colors.textMuted} strokeWidth="1.5" />
+                    <line x1="410" y1="50" x2="550" y2="85" stroke={colors.textMuted} strokeWidth="1.5" />
+
+                    {/* Site-to-Site */}
+                    <rect x="70" y="85" width="160" height="35" rx="8" fill={`${colors.info}15`} stroke={colors.info} strokeWidth="1.5" />
+                    <text x="150" y="107" textAnchor="middle" fill={colors.info} fontSize="11" fontWeight="600" fontFamily="Inter">Site-to-Site</text>
+
+                    <line x1="110" y1="120" x2="80" y2="155" stroke={colors.textMuted} strokeWidth="1" />
+                    <line x1="190" y1="120" x2="220" y2="155" stroke={colors.textMuted} strokeWidth="1" />
+
+                    <rect x="20" y="155" width="120" height="45" rx="8" fill={`${colors.info}10`} stroke={colors.info} strokeWidth="1" />
+                    <text x="80" y="173" textAnchor="middle" fill={colors.info} fontSize="10" fontWeight="600" fontFamily="Inter">Router Cisco/HW?</text>
+                    <text x="80" y="190" textAnchor="middle" fill={colors.info} fontSize="12" fontWeight="700" fontFamily="Inter">→ IPsec</text>
+
+                    <rect x="160" y="155" width="120" height="45" rx="8" fill={`${colors.purple}10`} stroke={colors.purple} strokeWidth="1" />
+                    <text x="220" y="173" textAnchor="middle" fill={colors.purple} fontSize="10" fontWeight="600" fontFamily="Inter">Linux/VPS?</text>
+                    <text x="220" y="190" textAnchor="middle" fill={colors.purple} fontSize="12" fontWeight="700" fontFamily="Inter">→ WireGuard</text>
+
+                    {/* Remote Access */}
+                    <rect x="270" y="85" width="160" height="35" rx="8" fill={`${colors.warn}15`} stroke={colors.warn} strokeWidth="1.5" />
+                    <text x="350" y="107" textAnchor="middle" fill={colors.warn} fontSize="11" fontWeight="600" fontFamily="Inter">Remote Access</text>
+
+                    <line x1="310" y1="120" x2="290" y2="155" stroke={colors.textMuted} strokeWidth="1" />
+                    <line x1="390" y1="120" x2="410" y2="155" stroke={colors.textMuted} strokeWidth="1" />
+
+                    <rect x="230" y="155" width="120" height="45" rx="8" fill={`${colors.warn}10`} stroke={colors.warn} strokeWidth="1" />
+                    <text x="290" y="173" textAnchor="middle" fill={colors.warn} fontSize="10" fontWeight="600" fontFamily="Inter">FW restrittivo?</text>
+                    <text x="290" y="190" textAnchor="middle" fill={colors.warn} fontSize="12" fontWeight="700" fontFamily="Inter">→ OpenVPN TCP 443</text>
+
+                    <rect x="370" y="155" width="120" height="45" rx="8" fill={`${colors.purple}10`} stroke={colors.purple} strokeWidth="1" />
+                    <text x="430" y="173" textAnchor="middle" fill={colors.purple} fontSize="10" fontWeight="600" fontFamily="Inter">Performance/Mobile?</text>
+                    <text x="430" y="190" textAnchor="middle" fill={colors.purple} fontSize="12" fontWeight="700" fontFamily="Inter">→ WireGuard</text>
+
+                    {/* Mesh */}
+                    <rect x="470" y="85" width="160" height="35" rx="8" fill={`${colors.purple}15`} stroke={colors.purple} strokeWidth="1.5" />
+                    <text x="550" y="107" textAnchor="middle" fill={colors.purple} fontSize="11" fontWeight="600" fontFamily="Inter">Mesh / P2P</text>
+
+                    <rect x="490" y="140" width="120" height="45" rx="8" fill={`${colors.purple}10`} stroke={colors.purple} strokeWidth="1" />
+                    <text x="550" y="158" textAnchor="middle" fill={colors.purple} fontSize="10" fontWeight="600" fontFamily="Inter">Sempre</text>
+                    <text x="550" y="175" textAnchor="middle" fill={colors.purple} fontSize="12" fontWeight="700" fontFamily="Inter">→ WireGuard</text>
+                    <line x1="550" y1="120" x2="550" y2="140" stroke={colors.textMuted} strokeWidth="1" />
+
+                    {/* Summary boxes */}
+                    <rect x="20" y="230" width="200" height="80" rx="12" fill={`${colors.info}10`} stroke={colors.info} strokeWidth="2" />
+                    <text x="120" y="255" textAnchor="middle" fill={colors.info} fontSize="14" fontWeight="700" fontFamily="Inter">🛡️ IPsec</text>
+                    <text x="120" y="275" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Enterprise, hardware dedicato</text>
+                    <text x="120" y="295" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Site-to-Site permanente</text>
+
+                    <rect x="250" y="230" width="200" height="80" rx="12" fill={`${colors.warn}10`} stroke={colors.warn} strokeWidth="2" />
+                    <text x="350" y="255" textAnchor="middle" fill={colors.warn} fontSize="14" fontWeight="700" fontFamily="Inter">📜 OpenVPN</text>
+                    <text x="350" y="275" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Flessibile, porta 443</text>
+                    <text x="350" y="295" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">FW restrittivi, legacy</text>
+
+                    <rect x="480" y="230" width="200" height="80" rx="12" fill={`${colors.purple}10`} stroke={colors.purple} strokeWidth="2" />
+                    <text x="580" y="255" textAnchor="middle" fill={colors.purple} fontSize="14" fontWeight="700" fontFamily="Inter">⚡ WireGuard</text>
+                    <text x="580" y="275" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Veloce, semplice, moderno</text>
+                    <text x="580" y="295" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Nuovo default per tutto</text>
+
+                    {/* Footer */}
+                    <text x="350" y="350" textAnchor="middle" fill={colors.textMuted} fontSize="11" fontFamily="Inter">In caso di dubbio: WireGuard per nuovi deployment, OpenVPN se serve compatibilità</text>
+                </svg>
+            </div>
+        );
+
+        const SlideRisorse = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Risorse per <span style={{ color: MODULE_COLOR }}>approfondimento</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }} className="slide-grid">
+                    <Glow color={colors.info}>
+                        <h3 style={{ color: colors.info, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>📚 Documentazione ufficiale</h3>
+                        {[
+                            'WireGuard: wireguard.com',
+                            'OpenVPN: openvpn.net/community',
+                            'StrongSwan (IPsec): strongswan.org',
+                            'Cisco IPsec: cisco.com/go/ipsec',
+                            'RFC 4301 (IPsec Architecture)',
+                            'RFC 7296 (IKEv2)'
+                        ].map((item, i) => (
+                            <div key={i} style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid ${colors.info}30` }}>{item}</div>
+                        ))}
+                    </Glow>
+                    <Glow color={colors.warn}>
+                        <h3 style={{ color: colors.warn, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔧 Tool e laboratorio</h3>
+                        {[
+                            'Packet Tracer (Cisco, simulazione IPsec)',
+                            'GNS3 / EVE-NG (lab virtualizzato)',
+                            'VirtualBox + pfSense (lab VPN reale)',
+                            'Wireshark (analisi pacchetti VPN)',
+                            'easy-rsa (gestione PKI)',
+                            'wg-quick (setup WireGuard rapido)'
+                        ].map((item, i) => (
+                            <div key={i} style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid ${colors.warn}30` }}>{item}</div>
+                        ))}
+                    </Glow>
+                    <Glow color={colors.purple}>
+                        <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🎓 Per approfondire</h3>
+                        {[
+                            'Tailscale blog (architettura WireGuard)',
+                            'Noise Protocol Framework (noiseprotocol.org)',
+                            'OWASP VPN Security Cheat Sheet',
+                            'Esercizi Packet Tracer su IPsec',
+                            'Setup WireGuard su Raspberry Pi',
+                            'Deploy OpenVPN su VPS (DigitalOcean)'
+                        ].map((item, i) => (
+                            <div key={i} style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', marginBottom: '6px', paddingLeft: '10px', borderLeft: `2px solid ${colors.purple}30` }}>{item}</div>
+                        ))}
+                    </Glow>
+                </div>
+
+                <div style={{ textAlign: 'center', marginTop: '30px', padding: '20px', borderRadius: '16px', background: `${MODULE_COLOR}08`, border: `1px solid ${MODULE_COLOR}30` }}>
+                    <div style={{ fontSize: '36px', marginBottom: '10px' }}>🎉</div>
+                    <p style={{ color: colors.text, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, fontFamily: "'Space Grotesk', sans-serif" }}>
+                        Presentazione completata!
+                    </p>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginTop: '8px' }}>
+                        Ora sai come funzionano le VPN, quali protocolli esistono e come configurarle.
+                    </p>
+                </div>
+            </div>
+        );
+
+        const slides = [SlideTitolo, SlideQuiz, SlideRiepilogo, SlideDecisionTree, SlideRisorse];
+
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const total = slides.length;
+            const goNext = useCallback(() => setCurrentSlide(s => Math.min(s + 1, total - 1)), [total]);
+            const goPrev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
+            const goIndex = useCallback(() => { window.location.href = 'index.html'; }, []);
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+                    if (e.key === 'Escape') goIndex();
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [goNext, goPrev, goIndex]);
+
+            const SlideComponent = slides[currentSlide];
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <a href="index.html" style={{ color: colors.textDim, textDecoration: 'none', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Indice</a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>M{MODULE_NUM}</span>
+                            <span style={{ color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{MODULE_TITLE}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 14px)' }}>{currentSlide + 1} / {total}</span>
+                            <div style={{ width: '80px', height: '4px', background: colors.bgLight, borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${((currentSlide + 1) / total) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '2px', transition: 'width 0.3s' }} />
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, maxWidth: '2200px', width: '94%', margin: '0 auto', padding: '70px 0 80px' }}><SlideComponent /></div>
+                    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderTop: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button onClick={goPrev} disabled={currentSlide === 0} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: currentSlide === 0 ? 'transparent' : colors.bgLight, color: currentSlide === 0 ? colors.textMuted : colors.text, cursor: currentSlide === 0 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter' }}>← Indietro</button>
+                        <div style={{ display: 'flex', gap: '16px', fontSize: 'clamp(11px, 1vw, 14px)' }}>
+                            {currentSlide === 0 && PREV_MODULE && <a href={PREV_MODULE.file} style={{ color: colors.textMuted, textDecoration: 'none' }}>← {PREV_MODULE.title}</a>}
+                            {currentSlide === total - 1 && <a href="index.html" style={{ color: MODULE_COLOR, textDecoration: 'none', fontWeight: 600 }}>← Torna all'indice</a>}
+                        </div>
+                        <button onClick={goNext} disabled={currentSlide === total - 1} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: currentSlide === total - 1 ? 'transparent' : `${MODULE_COLOR}20`, color: currentSlide === total - 1 ? colors.textMuted : MODULE_COLOR, cursor: currentSlide === total - 1 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600 }}>Avanti →</button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

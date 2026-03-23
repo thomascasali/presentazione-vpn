@@ -1,0 +1,809 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulo 3 - VPN SSL/TLS e OpenVPN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body { font-family: 'Inter', sans-serif; background: #0a0e17; color: #f1f5f9; min-height: 100vh; overflow-x: hidden; }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } .slide-grid { grid-template-columns: 1fr !important; } svg { max-width: 100% !important; } pre { white-space: pre-wrap !important; word-break: break-all !important; } }
+        @media (max-width: 480px) { html { font-size: 13px; } button { width: 100% !important; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#f59e0b', accentAlt: '#0ea5e9',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const MODULE_NUM = 3;
+        const MODULE_TITLE = 'VPN SSL/TLS e OpenVPN';
+        const MODULE_COLOR = '#f59e0b';
+        const PREV_MODULE = { title: 'IPsec in Dettaglio', file: 'modulo2-ipsec.html' };
+        const NEXT_MODULE = { title: 'WireGuard e VPN Moderne', file: 'modulo4-wireguard.html' };
+
+        const Code = ({ children, title }) => (
+            <pre style={{ background: '#0d1117', border: `1px solid ${colors.border}`, borderRadius: '12px', padding: 'clamp(14px, 1.5vw, 20px)', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: "'JetBrains Mono', monospace", overflowX: 'auto', lineHeight: 1.7 }}>
+                {title && <div style={{ color: MODULE_COLOR, paddingBottom: '10px', fontWeight: 600 }}>{'// '}{title}</div>}
+                <code>{children}</code>
+            </pre>
+        );
+
+        const Box = ({ type, title, children }) => {
+            const colorMap = { info: colors.info, warn: colors.warn, danger: colors.danger, success: colors.success, tip: MODULE_COLOR };
+            const iconMap = { info: 'ℹ️', warn: '⚠️', danger: '❌', success: '✅', tip: '💡' };
+            return (
+                <div style={{ borderLeft: `4px solid ${colorMap[type] || colors.info}`, padding: 'clamp(14px, 1.5vw, 20px)', margin: '16px 0', borderRadius: '0 12px 12px 0', background: colors.bgCard }}>
+                    {title && <div style={{ color: colorMap[type], fontWeight: 700, marginBottom: '8px', fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{iconMap[type]} {title}</div>}
+                    <div style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{children}</div>
+                </div>
+            );
+        };
+
+        const Table = ({ headers, rows }) => (
+            <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(12px, 1.1vw, 16px)' }}>
+                    <thead><tr>{headers.map((h, i) => <th key={i} style={{ padding: 'clamp(8px, 1vw, 14px)', background: colors.bgLight, color: MODULE_COLOR, fontWeight: 700, textAlign: 'left', borderBottom: `2px solid ${MODULE_COLOR}40` }}>{h}</th>)}</tr></thead>
+                    <tbody>{rows.map((row, i) => <tr key={i}>{row.map((cell, j) => <td key={j} style={{ padding: 'clamp(8px, 1vw, 14px)', borderBottom: `1px solid ${colors.border}`, color: colors.textDim, background: i % 2 === 0 ? 'transparent' : `${colors.bgLight}40` }}>{cell}</td>)}</tr>)}</tbody>
+                </table>
+            </div>
+        );
+
+        const Glow = ({ children, color }) => (
+            <div style={{ border: `2px solid ${color || MODULE_COLOR}`, borderRadius: '16px', padding: 'clamp(16px, 2vw, 24px)', boxShadow: `0 0 25px ${(color || MODULE_COLOR)}30`, background: colors.bgCard }}>{children}</div>
+        );
+
+        // ─── SLIDE ───
+        const SlideTitolo = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', gap: '20px' }}>
+                <div style={{ fontSize: '72px' }}>📜</div>
+                <div style={{ fontSize: 'clamp(12px, 1.1vw, 15px)', color: MODULE_COLOR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Modulo {MODULE_NUM}</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 4vw, 68px)', fontWeight: 700, background: `linear-gradient(135deg, ${MODULE_COLOR}, ${colors.danger})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {MODULE_TITLE}
+                </h1>
+                <p style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: colors.textDim, maxWidth: '600px' }}>
+                    SSL/TLS per VPN, architettura OpenVPN, configurazione e infrastruttura PKI
+                </p>
+            </div>
+        );
+
+        const SlideSSLTLS = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Come funziona <span style={{ color: MODULE_COLOR }}>SSL/TLS</span> per le VPN
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="info" title="SSL/TLS VPN">
+                            Utilizza il protocollo <strong>TLS</strong> (successore di SSL) per creare un tunnel crittografato.
+                            Opera a <strong style={{ color: colors.text }}>livello trasporto (L4-L7)</strong>, tipicamente su <strong style={{ color: MODULE_COLOR }}>porta TCP 443</strong> (HTTPS).
+                        </Box>
+                        <Glow color={MODULE_COLOR}>
+                            <h4 style={{ color: MODULE_COLOR, marginBottom: '10px' }}>Vantaggi chiave</h4>
+                            {[
+                                'Attraversa firewall e proxy (porta 443 = HTTPS)',
+                                'Non richiede client dedicato (browser-based possibile)',
+                                'Facile da configurare per Remote Access',
+                                'Granularità: può proteggere singole applicazioni',
+                                'Certificati X.509 standard, PKI consolidata'
+                            ].map((item, i) => (
+                                <div key={i} style={{ display: 'flex', gap: '8px', marginBottom: '8px', color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 16px)' }}>
+                                    <span style={{ color: colors.success }}>✓</span> {item}
+                                </div>
+                            ))}
+                        </Glow>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 450 350" style={{ width: '100%', maxWidth: '450px' }}>
+                            <text x="225" y="25" textAnchor="middle" fill={colors.text} fontSize="14" fontWeight="700" fontFamily="Space Grotesk">TLS Handshake per VPN</text>
+
+                            {/* Client */}
+                            <rect x="20" y="45" width="100" height="40" rx="8" fill={colors.bgCard} stroke={colors.info} strokeWidth="2" />
+                            <text x="70" y="70" textAnchor="middle" fill={colors.info} fontSize="12" fontWeight="600" fontFamily="Inter">Client VPN</text>
+
+                            {/* Server */}
+                            <rect x="330" y="45" width="100" height="40" rx="8" fill={colors.bgCard} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="380" y="70" textAnchor="middle" fill={MODULE_COLOR} fontSize="12" fontWeight="600" fontFamily="Inter">Server VPN</text>
+
+                            {/* Step 1 */}
+                            <line x1="120" y1="105" x2="330" y2="105" stroke={colors.info} strokeWidth="1.5" markerEnd="url(#arr-r)" />
+                            <text x="225" y="100" textAnchor="middle" fill={colors.info} fontSize="10" fontFamily="Inter" fontWeight="600">1. ClientHello (cipher suites, random)</text>
+
+                            {/* Step 2 */}
+                            <line x1="330" y1="135" x2="120" y2="135" stroke={MODULE_COLOR} strokeWidth="1.5" markerEnd="url(#arr-l)" />
+                            <text x="225" y="130" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter" fontWeight="600">2. ServerHello + Certificato + KeyExchange</text>
+
+                            {/* Step 3 */}
+                            <line x1="120" y1="165" x2="330" y2="165" stroke={colors.info} strokeWidth="1.5" markerEnd="url(#arr-r)" />
+                            <text x="225" y="160" textAnchor="middle" fill={colors.info} fontSize="10" fontFamily="Inter" fontWeight="600">3. Verifica cert + KeyExchange client</text>
+
+                            {/* Step 4 */}
+                            <line x1="120" y1="195" x2="330" y2="195" stroke={colors.success} strokeWidth="2" />
+                            <line x1="330" y1="195" x2="120" y2="195" stroke={colors.success} strokeWidth="2" />
+                            <text x="225" y="190" textAnchor="middle" fill={colors.success} fontSize="10" fontFamily="Inter" fontWeight="600">4. Finished — Master Secret condiviso</text>
+
+                            {/* Tunnel */}
+                            <rect x="80" y="215" width="290" height="40" rx="20" fill={`${colors.success}10`} stroke={colors.success} strokeWidth="2" />
+                            <text x="225" y="240" textAnchor="middle" fill={colors.success} fontSize="12" fontWeight="700" fontFamily="Inter">🔒 Tunnel TLS attivo (AES-256-GCM)</text>
+
+                            {/* Data flow */}
+                            <rect x="80" y="270" width="290" height="30" rx="8" fill={`${MODULE_COLOR}10`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="225" y="290" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontFamily="Inter">Traffico VPN crittografato ↔</text>
+
+                            <text x="225" y="330" textAnchor="middle" fill={colors.textMuted} fontSize="10" fontFamily="Inter">Tutto su TCP/UDP 443 — indistinguibile da HTTPS</text>
+
+                            <defs>
+                                <marker id="arr-r" markerWidth="8" markerHeight="6" refX="8" refY="3" orient="auto"><path d="M0,0 L8,3 L0,6" fill={colors.info} /></marker>
+                                <marker id="arr-l" markerWidth="8" markerHeight="6" refX="0" refY="3" orient="auto"><path d="M8,0 L0,3 L8,6" fill={MODULE_COLOR} /></marker>
+                            </defs>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideConfronto = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: colors.info }}>IPsec</span> vs <span style={{ color: MODULE_COLOR }}>SSL/TLS</span> VPN
+                </h2>
+                <Table
+                    headers={['Caratteristica', 'IPsec VPN', 'SSL/TLS VPN']}
+                    rows={[
+                        ['Livello OSI', 'Rete (L3)', 'Trasporto/Applicazione (L4-L7)'],
+                        ['Porta', 'ESP (proto 50), UDP 500/4500', <strong style={{ color: MODULE_COLOR }}>TCP/UDP 443</strong>],
+                        ['Client', 'Richiede client dedicato', 'Browser o client leggero'],
+                        ['Firewall traversal', <span style={{ color: colors.danger }}>Spesso bloccato</span>, <span style={{ color: colors.success }}>Passa ovunque (= HTTPS)</span>],
+                        ['Granularità', 'Rete intera (tutti i servizi)', 'Singole app o rete intera'],
+                        ['Configurazione', 'Complessa (IKE, SA, crypto map)', 'Più semplice (certificati TLS)'],
+                        ['Performance', 'Ottima (kernel-level)', 'Buona (user-space in OpenVPN)'],
+                        ['Uso tipico', 'Site-to-Site enterprise', 'Remote Access, BYOD'],
+                        ['NAT', 'Problematico (NAT-T necessario)', <span style={{ color: colors.success }}>Nessun problema</span>]
+                    ]}
+                />
+                <Box type="tip" title="Quando usare quale?">
+                    <strong>IPsec</strong>: collegamento permanente tra sedi con hardware dedicato.<br/>
+                    <strong>SSL/TLS</strong>: accesso remoto per dipendenti, ambienti con firewall restrittivi, BYOD.
+                </Box>
+            </div>
+        );
+
+        const SlideOpenVPN = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    <span style={{ color: MODULE_COLOR }}>OpenVPN</span>: architettura
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="info" title="Cos'è OpenVPN?">
+                            Software open-source che implementa una VPN SSL/TLS. Può operare in modalità
+                            <strong style={{ color: colors.text }}> TUN</strong> (routing L3) o <strong style={{ color: colors.text }}>TAP</strong> (bridging L2).
+                            Usa la libreria <strong>OpenSSL</strong> per la crittografia.
+                        </Box>
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px', marginTop: '16px' }}>
+                            <Glow color={colors.success}>
+                                <h4 style={{ color: colors.success, fontSize: 'clamp(14px, 1.3vw, 18px)', marginBottom: '8px' }}>TUN (L3)</h4>
+                                <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>
+                                    Interfaccia punto-punto<br/>
+                                    Routing di pacchetti IP<br/>
+                                    <strong>Più comune e performante</strong>
+                                </p>
+                            </Glow>
+                            <Glow color={colors.purple}>
+                                <h4 style={{ color: colors.purple, fontSize: 'clamp(14px, 1.3vw, 18px)', marginBottom: '8px' }}>TAP (L2)</h4>
+                                <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>
+                                    Interfaccia Ethernet virtuale<br/>
+                                    Bridge di frame L2<br/>
+                                    Serve per broadcast/multicast
+                                </p>
+                            </Glow>
+                        </div>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 450 340" style={{ width: '100%', maxWidth: '450px' }}>
+                            <text x="225" y="20" textAnchor="middle" fill={colors.text} fontSize="14" fontWeight="700" fontFamily="Space Grotesk">Architettura OpenVPN</text>
+
+                            {/* Client side */}
+                            <rect x="15" y="40" width="140" height="120" rx="12" fill={`${colors.info}08`} stroke={colors.info} strokeWidth="1.5" strokeDasharray="6,3" />
+                            <text x="85" y="60" textAnchor="middle" fill={colors.info} fontSize="11" fontWeight="700" fontFamily="Inter">Client</text>
+                            <rect x="30" y="70" width="110" height="25" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="85" y="87" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">App (browser, ecc.)</text>
+                            <rect x="30" y="100" width="110" height="25" rx="5" fill={`${colors.success}15`} stroke={colors.success} strokeWidth="1" />
+                            <text x="85" y="117" textAnchor="middle" fill={colors.success} fontSize="9" fontFamily="Inter">tun0 (10.8.0.2)</text>
+                            <rect x="30" y="130" width="110" height="25" rx="5" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="85" y="147" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontFamily="Inter">OpenVPN Client</text>
+
+                            {/* Internet */}
+                            <ellipse cx="225" y="130" rx="50" ry="30" fill="none" stroke={colors.border} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <text x="225" y="135" textAnchor="middle" fill={colors.textMuted} fontSize="10" fontFamily="Inter">🌐 Internet</text>
+                            <line x1="155" y1="130" x2="175" y2="130" stroke={MODULE_COLOR} strokeWidth="2" />
+                            <line x1="275" y1="130" x2="295" y2="130" stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="225" y="170" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontFamily="Inter">UDP/TCP 1194 (o 443)</text>
+
+                            {/* Server side */}
+                            <rect x="295" y="40" width="140" height="120" rx="12" fill={`${MODULE_COLOR}08`} stroke={MODULE_COLOR} strokeWidth="1.5" strokeDasharray="6,3" />
+                            <text x="365" y="60" textAnchor="middle" fill={MODULE_COLOR} fontSize="11" fontWeight="700" fontFamily="Inter">Server</text>
+                            <rect x="310" y="70" width="110" height="25" rx="5" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="365" y="87" textAnchor="middle" fill={MODULE_COLOR} fontSize="9" fontFamily="Inter">OpenVPN Server</text>
+                            <rect x="310" y="100" width="110" height="25" rx="5" fill={`${colors.success}15`} stroke={colors.success} strokeWidth="1" />
+                            <text x="365" y="117" textAnchor="middle" fill={colors.success} fontSize="9" fontFamily="Inter">tun0 (10.8.0.1)</text>
+                            <rect x="310" y="130" width="110" height="25" rx="5" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="365" y="147" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">LAN (192.168.1.0/24)</text>
+
+                            {/* Tunnel */}
+                            <rect x="60" y="195" width="330" height="30" rx="15" fill={`${MODULE_COLOR}10`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="225" y="215" textAnchor="middle" fill={MODULE_COLOR} fontSize="11" fontWeight="600" fontFamily="Inter">🔒 Tunnel TLS (AES-256-GCM)</text>
+
+                            {/* Info boxes */}
+                            <rect x="30" y="245" width="180" height="80" rx="8" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="120" y="265" textAnchor="middle" fill={colors.text} fontSize="10" fontWeight="600" fontFamily="Inter">File necessari client:</text>
+                            <text x="120" y="282" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• client.ovpn (config)</text>
+                            <text x="120" y="296" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• ca.crt + client.crt/.key</text>
+                            <text x="120" y="310" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• ta.key (HMAC anti-DoS)</text>
+
+                            <rect x="240" y="245" width="180" height="80" rx="8" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="330" y="265" textAnchor="middle" fill={colors.text} fontSize="10" fontWeight="600" fontFamily="Inter">File necessari server:</text>
+                            <text x="330" y="282" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• server.conf (config)</text>
+                            <text x="330" y="296" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• ca.crt + server.crt/.key</text>
+                            <text x="330" y="310" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">• dh.pem + ta.key</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideConfigServer = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Configurazione <span style={{ color: MODULE_COLOR }}>OpenVPN Server</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                    <Code title="server.conf">
+{`# Porta e protocollo
+port 1194
+proto udp
+dev tun
+
+# Certificati e chiavi
+ca   /etc/openvpn/ca.crt
+cert /etc/openvpn/server.crt
+key  /etc/openvpn/server.key
+dh   /etc/openvpn/dh2048.pem
+
+# Rete VPN
+server 10.8.0.0 255.255.255.0
+
+# Routing verso LAN aziendale
+push "route 192.168.1.0 255.255.255.0"
+
+# DNS push al client
+push "dhcp-option DNS 192.168.1.1"
+
+# Crittografia
+cipher AES-256-GCM
+auth SHA256
+tls-auth ta.key 0
+
+# Keepalive e compressione
+keepalive 10 120
+compress lz4-v2
+push "compress lz4-v2"
+
+# Sicurezza
+user nobody
+group nogroup
+persist-key
+persist-tun
+
+# Logging
+status /var/log/openvpn-status.log
+log-append /var/log/openvpn.log
+verb 3`}</Code>
+                    <div>
+                        <Code title="client.ovpn">
+{`client
+dev tun
+proto udp
+remote vpn.azienda.it 1194
+resolv-retry infinite
+nobind
+
+# Certificati (inline o file)
+ca   ca.crt
+cert client1.crt
+key  client1.key
+
+# Crittografia
+cipher AES-256-GCM
+auth SHA256
+tls-auth ta.key 1
+
+# Sicurezza
+remote-cert-tls server
+persist-key
+persist-tun
+verb 3`}</Code>
+                        <Box type="tip" title="File .ovpn inline">
+                            Si possono incorporare i certificati direttamente nel file .ovpn usando i tag
+                            <code style={{ fontFamily: "'JetBrains Mono', monospace" }}> &lt;ca&gt;...&lt;/ca&gt;</code>,
+                            <code style={{ fontFamily: "'JetBrains Mono', monospace" }}> &lt;cert&gt;...&lt;/cert&gt;</code>,
+                            <code style={{ fontFamily: "'JetBrains Mono', monospace" }}> &lt;key&gt;...&lt;/key&gt;</code>.
+                            Questo permette di distribuire un singolo file al client.
+                        </Box>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlidePKI = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Certificati e <span style={{ color: MODULE_COLOR }}>PKI</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <svg viewBox="0 0 400 320" style={{ width: '100%', maxWidth: '400px' }}>
+                            <text x="200" y="25" textAnchor="middle" fill={colors.text} fontSize="14" fontWeight="700" fontFamily="Space Grotesk">Infrastruttura PKI OpenVPN</text>
+
+                            {/* CA */}
+                            <rect x="120" y="40" width="160" height="55" rx="12" fill={`${colors.danger}12`} stroke={colors.danger} strokeWidth="2" />
+                            <text x="200" y="65" textAnchor="middle" fill={colors.danger} fontSize="13" fontWeight="700" fontFamily="Inter">🏛️ CA (Root)</text>
+                            <text x="200" y="83" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">ca.crt + ca.key (SEGRETA!)</text>
+
+                            {/* Lines to server and client */}
+                            <line x1="170" y1="95" x2="100" y2="140" stroke={colors.danger} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <line x1="230" y1="95" x2="300" y2="140" stroke={colors.danger} strokeWidth="1.5" strokeDasharray="4,3" />
+                            <text x="120" y="120" fill={colors.textDim} fontSize="9" fontFamily="Inter">firma</text>
+                            <text x="275" y="120" fill={colors.textDim} fontSize="9" fontFamily="Inter">firma</text>
+
+                            {/* Server cert */}
+                            <rect x="20" y="140" width="160" height="55" rx="12" fill={`${MODULE_COLOR}12`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="100" y="165" textAnchor="middle" fill={MODULE_COLOR} fontSize="12" fontWeight="700" fontFamily="Inter">🖥️ Server Cert</text>
+                            <text x="100" y="183" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">server.crt + server.key</text>
+
+                            {/* Client cert */}
+                            <rect x="220" y="140" width="160" height="55" rx="12" fill={`${colors.info}12`} stroke={colors.info} strokeWidth="2" />
+                            <text x="300" y="165" textAnchor="middle" fill={colors.info} fontSize="12" fontWeight="700" fontFamily="Inter">👤 Client Cert</text>
+                            <text x="300" y="183" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">client1.crt + client1.key</text>
+
+                            {/* DH */}
+                            <rect x="20" y="215" width="160" height="40" rx="8" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="100" y="240" textAnchor="middle" fill={colors.purple} fontSize="11" fontWeight="600" fontFamily="Inter">🔑 DH Params (dh2048.pem)</text>
+
+                            {/* HMAC */}
+                            <rect x="220" y="215" width="160" height="40" rx="8" fill={colors.bgLight} stroke={colors.border} strokeWidth="1" />
+                            <text x="300" y="240" textAnchor="middle" fill={colors.cyan} fontSize="11" fontWeight="600" fontFamily="Inter">🛡️ HMAC Key (ta.key)</text>
+
+                            {/* CRL */}
+                            <rect x="120" y="275" width="160" height="35" rx="8" fill={`${colors.danger}08`} stroke={colors.danger} strokeWidth="1" strokeDasharray="4,3" />
+                            <text x="200" y="297" textAnchor="middle" fill={colors.danger} fontSize="10" fontFamily="Inter">📋 CRL (revoca certificati)</text>
+                        </svg>
+                    </div>
+                    <div>
+                        <Code title="Generazione PKI con easy-rsa">
+{`# 1. Inizializza PKI
+./easyrsa init-pki
+
+# 2. Crea la CA
+./easyrsa build-ca
+  → ca.crt, ca.key
+
+# 3. Genera certificato server
+./easyrsa gen-req server nopass
+./easyrsa sign-req server server
+  → server.crt, server.key
+
+# 4. Genera certificato client
+./easyrsa gen-req client1 nopass
+./easyrsa sign-req client client1
+  → client1.crt, client1.key
+
+# 5. Parametri Diffie-Hellman
+./easyrsa gen-dh
+  → dh.pem
+
+# 6. HMAC key (anti-DoS)
+openvpn --genkey secret ta.key`}</Code>
+                        <Box type="danger" title="Sicurezza chiave CA">
+                            La chiave privata della CA (<code style={{ fontFamily: "'JetBrains Mono', monospace" }}>ca.key</code>) deve essere
+                            tenuta <strong>offline e protetta</strong>. Se compromessa, l'attaccante può generare certificati validi per qualsiasi client!
+                        </Box>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideRevoca = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Gestione certificati e <span style={{ color: colors.danger }}>revoca</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Box type="warn" title="Quando revocare?">
+                            <ul style={{ listStyle: 'none', padding: 0 }}>
+                                <li style={{ marginBottom: '6px' }}>• Dipendente lascia l'azienda</li>
+                                <li style={{ marginBottom: '6px' }}>• Dispositivo smarrito o rubato</li>
+                                <li style={{ marginBottom: '6px' }}>• Chiave privata compromessa</li>
+                                <li style={{ marginBottom: '6px' }}>• Certificato emesso per errore</li>
+                            </ul>
+                        </Box>
+                        <Code title="Revoca di un certificato">
+{`# Revoca il certificato di client1
+./easyrsa revoke client1
+
+# Rigenera la CRL
+./easyrsa gen-crl
+
+# Copia la CRL nella cartella OpenVPN
+cp pki/crl.pem /etc/openvpn/
+
+# Aggiungi alla config del server
+crl-verify /etc/openvpn/crl.pem`}</Code>
+                    </div>
+                    <div>
+                        <h3 style={{ color: colors.text, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '16px' }}>Ciclo di vita del certificato</h3>
+                        {[
+                            { step: '1', label: 'Generazione', desc: 'easy-rsa crea coppia chiavi + CSR', color: colors.success },
+                            { step: '2', label: 'Firma CA', desc: 'La CA firma il CSR → certificato valido', color: MODULE_COLOR },
+                            { step: '3', label: 'Distribuzione', desc: 'Certificato inviato al client/server', color: colors.info },
+                            { step: '4', label: 'Utilizzo', desc: 'Autenticazione TLS durante la connessione', color: colors.purple },
+                            { step: '5', label: 'Scadenza/Revoca', desc: 'Raggiunge la scadenza o viene revocato via CRL', color: colors.danger }
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '14px', alignItems: 'flex-start', marginBottom: '14px' }}>
+                                <div style={{ width: '32px', height: '32px', borderRadius: '50%', background: `${item.color}20`, border: `2px solid ${item.color}`, display: 'flex', alignItems: 'center', justifyContent: 'center', flexShrink: 0, color: item.color, fontWeight: 700, fontSize: '14px' }}>{item.step}</div>
+                                <div>
+                                    <div style={{ color: item.color, fontWeight: 700, fontSize: 'clamp(13px, 1.2vw, 16px)' }}>{item.label}</div>
+                                    <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.desc}</div>
+                                </div>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideSicurezza = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Hardening <span style={{ color: MODULE_COLOR }}>OpenVPN</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }} className="slide-grid">
+                    {[
+                        { icon: '🔐', title: 'tls-auth / tls-crypt', desc: 'HMAC su ogni pacchetto TLS. Protegge da DoS, port scanning e attacchi pre-auth. tls-crypt aggiunge anche crittografia.', color: MODULE_COLOR },
+                        { icon: '🔒', title: 'Cipher robusto', desc: 'AES-256-GCM è il cipher consigliato. Evitare BF-CBC (Blowfish) e cipher datati.', color: colors.info },
+                        { icon: '👤', title: 'Privilegi minimi', desc: 'user nobody / group nogroup: dopo l\'init, OpenVPN dropa i privilegi di root.', color: colors.purple },
+                        { icon: '📋', title: 'CRL aggiornata', desc: 'Verificare sempre i certificati contro la lista di revoca. Automatizzare la rigenerazione CRL.', color: colors.danger },
+                        { icon: '🔑', title: 'remote-cert-tls', desc: 'Il client verifica che il server abbia un certificato di tipo "server". Previene attacchi MITM.', color: colors.success },
+                        { icon: '🌐', title: 'DNS leak prevention', desc: 'push "block-outside-dns" su Windows. Forzare i DNS dentro il tunnel per evitare DNS leak.', color: colors.cyan }
+                    ].map((item, i) => (
+                        <div key={i} style={{ background: colors.bgCard, border: `1px solid ${item.color}30`, borderRadius: '12px', padding: 'clamp(16px, 1.5vw, 22px)' }}>
+                            <div style={{ fontSize: '28px', marginBottom: '8px' }}>{item.icon}</div>
+                            <h4 style={{ color: item.color, fontSize: 'clamp(14px, 1.3vw, 18px)', fontWeight: 700, marginBottom: '6px' }}>{item.title}</h4>
+                            <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>{item.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        // ─── SIMULATORE GENERATORE CONFIG ───
+        const SlideSimConfig = () => {
+            const [config, setConfig] = useState({
+                serverAddr: 'vpn.azienda.it',
+                port: '1194',
+                proto: 'udp',
+                cipher: 'AES-256-GCM',
+                auth: 'SHA256',
+                dev: 'tun',
+                compress: 'lz4-v2',
+                tlsAuth: true,
+                redirect: false,
+                dns: '192.168.1.1'
+            });
+
+            const presets = [
+                { name: '🏢 Aziendale standard', values: { serverAddr: 'vpn.azienda.it', port: '1194', proto: 'udp', cipher: 'AES-256-GCM', auth: 'SHA256', dev: 'tun', compress: 'lz4-v2', tlsAuth: true, redirect: false, dns: '192.168.1.1' } },
+                { name: '🔒 Massima sicurezza', values: { serverAddr: 'vpn.secure.it', port: '443', proto: 'tcp', cipher: 'AES-256-GCM', auth: 'SHA384', dev: 'tun', compress: '', tlsAuth: true, redirect: true, dns: '1.1.1.1' } },
+                { name: '🌐 Bypass firewall', values: { serverAddr: 'vpn.example.com', port: '443', proto: 'tcp', cipher: 'AES-256-GCM', auth: 'SHA256', dev: 'tun', compress: '', tlsAuth: true, redirect: true, dns: '8.8.8.8' } }
+            ];
+
+            const generateOVPN = () => {
+                return `client
+dev ${config.dev}
+proto ${config.proto}
+remote ${config.serverAddr} ${config.port}
+resolv-retry infinite
+nobind
+
+# Crittografia
+cipher ${config.cipher}
+auth ${config.auth}
+${config.tlsAuth ? 'tls-auth ta.key 1' : '# tls-auth disabilitato'}
+
+# Sicurezza
+remote-cert-tls server
+persist-key
+persist-tun
+${config.compress ? `compress ${config.compress}` : '# compressione disabilitata'}
+${config.redirect ? 'redirect-gateway def1 bypass-dhcp' : '# split tunneling (solo traffico aziendale)'}
+${config.redirect ? `dhcp-option DNS ${config.dns}` : ''}
+
+# Certificati (da incorporare)
+<ca>
+# ── Inserire ca.crt qui ──
+</ca>
+<cert>
+# ── Inserire client.crt qui ──
+</cert>
+<key>
+# ── Inserire client.key qui ──
+</key>
+${config.tlsAuth ? `<tls-auth>
+# ── Inserire ta.key qui ──
+</tls-auth>
+key-direction 1` : ''}
+
+verb 3`;
+            };
+
+            const inputStyle = { padding: '8px 12px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.bgLight, color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', width: '100%' };
+            const labelStyle = { color: colors.textDim, fontSize: 'clamp(11px, 1vw, 14px)', fontWeight: 600, marginBottom: '4px', display: 'block' };
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Generatore <span style={{ color: MODULE_COLOR }}>configurazione .ovpn</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Seleziona i parametri e genera il file di configurazione OpenVPN client.
+                    </p>
+
+                    {/* Presets */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '20px' }}>
+                        {presets.map((p, i) => (
+                            <button key={i} onClick={() => setConfig(p.values)} style={{
+                                padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.bgCard, color: colors.textDim, cursor: 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600, transition: 'all 0.2s'
+                            }}>{p.name}</button>
+                        ))}
+                    </div>
+
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                        {/* Settings */}
+                        <div style={{ background: colors.bgCard, borderRadius: '16px', padding: 'clamp(16px, 1.5vw, 24px)', border: `1px solid ${colors.border}` }}>
+                            <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(15px, 1.4vw, 20px)', marginBottom: '16px' }}>Parametri</h3>
+                            <div style={{ display: 'grid', gridTemplateColumns: '1fr 1fr', gap: '12px' }}>
+                                <div>
+                                    <label style={labelStyle}>Server</label>
+                                    <input value={config.serverAddr} onChange={e => setConfig({...config, serverAddr: e.target.value})} style={inputStyle} />
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Porta</label>
+                                    <select value={config.port} onChange={e => setConfig({...config, port: e.target.value})} style={inputStyle}>
+                                        <option value="1194">1194 (default)</option>
+                                        <option value="443">443 (bypass FW)</option>
+                                        <option value="8443">8443</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Protocollo</label>
+                                    <select value={config.proto} onChange={e => setConfig({...config, proto: e.target.value})} style={inputStyle}>
+                                        <option value="udp">UDP (veloce)</option>
+                                        <option value="tcp">TCP (affidabile)</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Cipher</label>
+                                    <select value={config.cipher} onChange={e => setConfig({...config, cipher: e.target.value})} style={inputStyle}>
+                                        <option value="AES-256-GCM">AES-256-GCM</option>
+                                        <option value="AES-128-GCM">AES-128-GCM</option>
+                                        <option value="CHACHA20-POLY1305">ChaCha20-Poly1305</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>Auth HMAC</label>
+                                    <select value={config.auth} onChange={e => setConfig({...config, auth: e.target.value})} style={inputStyle}>
+                                        <option value="SHA256">SHA-256</option>
+                                        <option value="SHA384">SHA-384</option>
+                                        <option value="SHA512">SHA-512</option>
+                                    </select>
+                                </div>
+                                <div>
+                                    <label style={labelStyle}>DNS</label>
+                                    <input value={config.dns} onChange={e => setConfig({...config, dns: e.target.value})} style={inputStyle} />
+                                </div>
+                            </div>
+                            <div style={{ display: 'flex', gap: '16px', marginTop: '14px', flexWrap: 'wrap' }}>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={config.tlsAuth} onChange={e => setConfig({...config, tlsAuth: e.target.checked})} /> tls-auth
+                                </label>
+                                <label style={{ display: 'flex', alignItems: 'center', gap: '6px', color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', cursor: 'pointer' }}>
+                                    <input type="checkbox" checked={config.redirect} onChange={e => setConfig({...config, redirect: e.target.checked})} /> Full tunnel (redirect gateway)
+                                </label>
+                            </div>
+                        </div>
+
+                        {/* Output */}
+                        <div>
+                            <Code title={`client.ovpn — ${config.serverAddr}:${config.port}/${config.proto}`}>
+                                {generateOVPN()}
+                            </Code>
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SlideSimTLSHandshake = () => {
+            const [step, setStep] = useState(0);
+            const steps = [
+                { label: 'ClientHello', from: 'client', msg: 'Versione TLS, cipher suites supportate, random client', color: colors.info },
+                { label: 'ServerHello', from: 'server', msg: 'Cipher suite scelta (AES-256-GCM), random server', color: MODULE_COLOR },
+                { label: 'Certificato Server', from: 'server', msg: 'Invia server.crt firmato dalla CA', color: MODULE_COLOR },
+                { label: 'Verifica Certificato', from: 'client', msg: 'Il client verifica server.crt con ca.crt → identità confermata', color: colors.success },
+                { label: 'Certificato Client', from: 'client', msg: 'Invia client1.crt firmato dalla CA (autenticazione bidirezionale)', color: colors.info },
+                { label: 'Key Exchange', from: 'both', msg: 'Scambio ECDHE per generare il Master Secret condiviso', color: colors.purple },
+                { label: 'Finished', from: 'both', msg: 'Verifica reciproca: entrambi calcolano HMAC sui messaggi precedenti', color: colors.success },
+                { label: 'Tunnel Attivo', from: 'both', msg: 'Sessione TLS stabilita. Traffico VPN crittografato con AES-256-GCM', color: colors.success }
+            ];
+
+            const s = steps[step];
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Simulatore: <span style={{ color: MODULE_COLOR }}>TLS Handshake OpenVPN</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Visualizza ogni fase dell'handshake TLS con autenticazione bidirezionale (mutual TLS).
+                    </p>
+
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '8px', marginBottom: '16px' }}>
+                        <button onClick={() => setStep(Math.max(0, step - 1))} disabled={step === 0} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: colors.bgLight, color: step === 0 ? colors.textMuted : colors.text, cursor: step === 0 ? 'default' : 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Prev</button>
+                        <button onClick={() => setStep(Math.min(steps.length - 1, step + 1))} disabled={step === steps.length - 1} style={{ padding: '8px 16px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: `${MODULE_COLOR}20`, color: step === steps.length - 1 ? colors.textMuted : MODULE_COLOR, cursor: step === steps.length - 1 ? 'default' : 'pointer', fontFamily: 'Inter', fontSize: 'clamp(12px, 1.1vw, 15px)', fontWeight: 600 }}>Next →</button>
+                        <span style={{ color: colors.textMuted, fontSize: 'clamp(12px, 1.1vw, 15px)', display: 'flex', alignItems: 'center' }}>Step {step + 1} / {steps.length}</span>
+                    </div>
+
+                    {/* Progress */}
+                    <div style={{ display: 'flex', gap: '3px', marginBottom: '16px' }}>
+                        {steps.map((st, i) => (
+                            <div key={i} onClick={() => setStep(i)} style={{ flex: 1, height: '6px', borderRadius: '3px', cursor: 'pointer', background: i <= step ? st.color : colors.bgLight, transition: 'background 0.3s' }} />
+                        ))}
+                    </div>
+
+                    <div style={{ background: colors.bgCard, borderRadius: '16px', border: `1px solid ${s.color}40`, padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <div style={{ display: 'flex', justifyContent: 'space-between', alignItems: 'center', marginBottom: '16px' }}>
+                            <span style={{ padding: '4px 14px', borderRadius: '50px', background: `${s.color}20`, color: s.color, fontSize: 'clamp(11px, 1vw, 14px)', fontWeight: 700 }}>{s.label}</span>
+                        </div>
+
+                        <div style={{ display: 'grid', gridTemplateColumns: '1fr auto 1fr', gap: '16px', alignItems: 'center' }} className="slide-grid">
+                            <div style={{ padding: '14px', borderRadius: '12px', background: `${colors.info}10`, border: `1px solid ${colors.info}30`, textAlign: 'center', opacity: s.from === 'server' ? 0.5 : 1 }}>
+                                <div style={{ fontSize: '28px', marginBottom: '6px' }}>💻</div>
+                                <div style={{ color: colors.info, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>Client</div>
+                            </div>
+                            <div style={{ fontSize: '28px', color: s.color }}>
+                                {s.from === 'client' ? '→' : s.from === 'server' ? '←' : '⇄'}
+                            </div>
+                            <div style={{ padding: '14px', borderRadius: '12px', background: `${MODULE_COLOR}10`, border: `1px solid ${MODULE_COLOR}30`, textAlign: 'center', opacity: s.from === 'client' ? 0.5 : 1 }}>
+                                <div style={{ fontSize: '28px', marginBottom: '6px' }}>🖥️</div>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>Server</div>
+                            </div>
+                        </div>
+
+                        <div style={{ marginTop: '16px', padding: '12px', borderRadius: '8px', background: colors.bgLight, color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: "'JetBrains Mono', monospace" }}>
+                            💡 {s.msg}
+                        </div>
+                    </div>
+                </div>
+            );
+        };
+
+        const SlideBestPractices = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Best Practices e <span style={{ color: MODULE_COLOR }}>Riepilogo</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
+                    <Box type="success" title="OpenVPN — Configurazione consigliata">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {['UDP porta 1194 (performance) o TCP 443 (bypass FW)', 'AES-256-GCM + SHA-256', 'tls-crypt (meglio di tls-auth)', 'Certificati con easy-rsa (no PSK)', 'CRL sempre aggiornata', 'remote-cert-tls server'].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.success }}>✓</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                    <Box type="danger" title="Da evitare">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {['Blowfish-CBC (cipher obsoleto)', 'Chiave CA non protetta', 'Compressione con dati sensibili (VORACLE)', 'Certificati senza scadenza', 'tap mode se non necessario', 'PSK condivise tra molti client'].map((item, i) => <li key={i} style={{ marginBottom: '8px' }}><span style={{ color: colors.danger }}>✗</span> {item}</li>)}
+                        </ul>
+                    </Box>
+                </div>
+                <Glow>
+                    <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>📋 Riepilogo Modulo 3</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }} className="slide-grid">
+                        {[
+                            { label: 'SSL/TLS VPN', value: 'Opera su L4-L7, porta 443, attraversa firewall' },
+                            { label: 'vs IPsec', value: 'Più semplice, più flessibile, meno performante' },
+                            { label: 'OpenVPN', value: 'Open-source, TUN/TAP, TLS + certificati' },
+                            { label: 'PKI', value: 'CA → server cert → client cert → CRL' },
+                            { label: 'Config', value: 'server.conf + client.ovpn con cert inline' },
+                            { label: 'Prossimo', value: 'Modulo 4: WireGuard →' }
+                        ].map((item, i) => (
+                            <div key={i} style={{ padding: '10px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>{item.label}</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </Glow>
+            </div>
+        );
+
+        // ─── SLIDE ARRAY ───
+        const slides = [SlideTitolo, SlideSSLTLS, SlideConfronto, SlideOpenVPN, SlideConfigServer, SlidePKI, SlideRevoca, SlideSicurezza, SlideSimConfig, SlideSimTLSHandshake, SlideBestPractices];
+
+        // ─── APP ───
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const total = slides.length;
+            const goNext = useCallback(() => setCurrentSlide(s => Math.min(s + 1, total - 1)), [total]);
+            const goPrev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
+            const goIndex = useCallback(() => { window.location.href = 'index.html'; }, []);
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+                    if (e.key === 'Escape') goIndex();
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [goNext, goPrev, goIndex]);
+
+            const SlideComponent = slides[currentSlide];
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                    <div style={{ position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderBottom: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <a href="index.html" style={{ color: colors.textDim, textDecoration: 'none', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Indice</a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>M{MODULE_NUM}</span>
+                            <span style={{ color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{MODULE_TITLE}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 14px)' }}>{currentSlide + 1} / {total}</span>
+                            <div style={{ width: '80px', height: '4px', background: colors.bgLight, borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${((currentSlide + 1) / total) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '2px', transition: 'width 0.3s' }} />
+                            </div>
+                        </div>
+                    </div>
+                    <div style={{ flex: 1, maxWidth: '2200px', width: '94%', margin: '0 auto', padding: '70px 0 80px' }}><SlideComponent /></div>
+                    <div style={{ position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100, background: `${colors.bg}ee`, backdropFilter: 'blur(12px)', borderTop: `1px solid ${colors.border}`, padding: '10px 20px', display: 'flex', alignItems: 'center', justifyContent: 'space-between' }}>
+                        <button onClick={goPrev} disabled={currentSlide === 0} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`, background: currentSlide === 0 ? 'transparent' : colors.bgLight, color: currentSlide === 0 ? colors.textMuted : colors.text, cursor: currentSlide === 0 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter' }}>← Indietro</button>
+                        <div style={{ display: 'flex', gap: '16px', fontSize: 'clamp(11px, 1vw, 14px)' }}>
+                            {currentSlide === 0 && PREV_MODULE && <a href={PREV_MODULE.file} style={{ color: colors.textMuted, textDecoration: 'none' }}>← {PREV_MODULE.title}</a>}
+                            {currentSlide === total - 1 && NEXT_MODULE && <a href={NEXT_MODULE.file} style={{ color: MODULE_COLOR, textDecoration: 'none', fontWeight: 600 }}>{NEXT_MODULE.title} →</a>}
+                        </div>
+                        <button onClick={goNext} disabled={currentSlide === total - 1} style={{ padding: '8px 20px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`, background: currentSlide === total - 1 ? 'transparent' : `${MODULE_COLOR}20`, color: currentSlide === total - 1 ? colors.textMuted : MODULE_COLOR, cursor: currentSlide === total - 1 ? 'default' : 'pointer', fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600 }}>Avanti →</button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

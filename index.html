@@ -1,0 +1,303 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>VPN - Corso Sistemi e Reti</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e17;
+            color: #f1f5f9;
+            min-height: 100vh;
+        }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } }
+        @media (max-width: 480px) { html { font-size: 13px; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#00d4aa', accentAlt: '#0ea5e9',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const modules = [
+            {
+                num: 1,
+                icon: '🔒',
+                title: 'Fondamenti VPN',
+                desc: 'Cos\'è una VPN, perché serve, concetti chiave di tunneling e crittografia. Tipi di VPN e panoramica sui protocolli.',
+                file: 'modulo1-fondamenti-vpn.html',
+                slides: 10,
+                color: '#00d4aa',
+                tags: ['Tunneling', 'Crittografia', 'Site-to-Site', 'Remote Access', 'Protocolli']
+            },
+            {
+                num: 2,
+                icon: '🛡️',
+                title: 'IPsec in Dettaglio',
+                desc: 'Architettura IPsec con AH e ESP, modalità Transport e Tunnel, IKE, Security Association e configurazione Cisco.',
+                file: 'modulo2-ipsec.html',
+                slides: 10,
+                color: '#0ea5e9',
+                tags: ['AH vs ESP', 'Transport/Tunnel', 'IKE', 'Diffie-Hellman', 'Cisco Config']
+            },
+            {
+                num: 3,
+                icon: '📜',
+                title: 'VPN SSL/TLS e OpenVPN',
+                desc: 'Funzionamento SSL/TLS per VPN, architettura OpenVPN, configurazione server/client, certificati e PKI.',
+                file: 'modulo3-openvpn.html',
+                slides: 10,
+                color: '#f59e0b',
+                tags: ['SSL/TLS', 'OpenVPN', 'Certificati', 'PKI', 'File .ovpn']
+            },
+            {
+                num: 4,
+                icon: '⚡',
+                title: 'WireGuard e VPN Moderne',
+                desc: 'WireGuard come protocollo rivoluzionario, confronto prestazioni, configurazione e VPN commerciali vs self-hosted.',
+                file: 'modulo4-wireguard.html',
+                slides: 8,
+                color: '#a78bfa',
+                tags: ['WireGuard', 'Performance', 'Chiavi', 'Confronto', 'Self-hosted']
+            },
+            {
+                num: 5,
+                icon: '🔧',
+                title: 'Scenari Pratici e Lab',
+                desc: 'Scenari reali: collegamento sedi, smart working, split tunneling. Troubleshooting e configurazione guidata.',
+                file: 'modulo5-scenari-pratici.html',
+                slides: 8,
+                color: '#22d3ee',
+                tags: ['Site-to-Site', 'Smart Working', 'Split Tunnel', 'Troubleshooting', 'Lab']
+            },
+            {
+                num: 6,
+                icon: '✅',
+                title: 'Quiz e Riepilogo',
+                desc: 'Quiz interattivo di 15 domande, riepilogo di tutti i concetti chiave e risorse per approfondimento.',
+                file: 'modulo6-quiz.html',
+                slides: 5,
+                color: '#ef4444',
+                tags: ['Quiz 15 domande', 'Riepilogo', 'Risorse']
+            }
+        ];
+
+        const App = () => {
+            const [hoveredCard, setHoveredCard] = React.useState(null);
+
+            return (
+                <div style={{
+                    minHeight: '100vh',
+                    background: `radial-gradient(ellipse at 50% 0%, ${colors.accent}08 0%, transparent 50%), ${colors.bg}`,
+                    padding: 'clamp(20px, 4vw, 60px) 0'
+                }}>
+                    {/* Header */}
+                    <div style={{
+                        textAlign: 'center',
+                        maxWidth: '2200px',
+                        width: '94%',
+                        margin: '0 auto',
+                        marginBottom: 'clamp(30px, 4vw, 60px)'
+                    }}>
+                        <div style={{
+                            display: 'inline-flex',
+                            alignItems: 'center',
+                            gap: '12px',
+                            background: `${colors.accent}15`,
+                            border: `1px solid ${colors.accent}30`,
+                            borderRadius: '50px',
+                            padding: '8px 20px',
+                            marginBottom: '20px'
+                        }}>
+                            <span style={{ fontSize: 'clamp(14px, 1.3vw, 18px)', color: colors.accent }}>
+                                Sistemi e Reti — ITIS
+                            </span>
+                        </div>
+                        <h1 style={{
+                            fontFamily: "'Space Grotesk', sans-serif",
+                            fontSize: 'clamp(32px, 4vw, 68px)',
+                            fontWeight: 700,
+                            background: `linear-gradient(135deg, ${colors.accent}, ${colors.accentAlt})`,
+                            WebkitBackgroundClip: 'text',
+                            WebkitTextFillColor: 'transparent',
+                            marginBottom: '12px'
+                        }}>
+                            🔒 Virtual Private Network
+                        </h1>
+                        <p style={{
+                            fontSize: 'clamp(16px, 1.5vw, 22px)',
+                            color: colors.textDim,
+                            maxWidth: '700px',
+                            margin: '0 auto'
+                        }}>
+                            Tunneling, crittografia, protocolli e configurazioni pratiche
+                        </p>
+                        <p style={{
+                            fontSize: 'clamp(12px, 1.1vw, 15px)',
+                            color: colors.textMuted,
+                            marginTop: '12px'
+                        }}>
+                            6 moduli • {modules.reduce((a, m) => a + m.slides, 0)} slide • Simulatori interattivi
+                        </p>
+                    </div>
+
+                    {/* Grid moduli */}
+                    <div style={{
+                        maxWidth: '2200px',
+                        width: '94%',
+                        margin: '0 auto',
+                        display: 'grid',
+                        gridTemplateColumns: 'repeat(auto-fit, minmax(340px, 1fr))',
+                        gap: 'clamp(16px, 2vw, 24px)'
+                    }}>
+                        {modules.map((mod, i) => (
+                            <a
+                                key={mod.num}
+                                href={mod.file}
+                                onMouseEnter={() => setHoveredCard(i)}
+                                onMouseLeave={() => setHoveredCard(null)}
+                                style={{
+                                    textDecoration: 'none',
+                                    color: 'inherit',
+                                    background: colors.bgCard,
+                                    border: `1px solid ${hoveredCard === i ? mod.color + '60' : colors.border}`,
+                                    borderRadius: '16px',
+                                    padding: 'clamp(20px, 2vw, 28px)',
+                                    transition: 'all 0.3s ease',
+                                    transform: hoveredCard === i ? 'translateY(-4px)' : 'none',
+                                    boxShadow: hoveredCard === i ? `0 8px 30px ${mod.color}20` : 'none',
+                                    display: 'flex',
+                                    flexDirection: 'column',
+                                    gap: '16px'
+                                }}
+                            >
+                                {/* Icon + module number */}
+                                <div style={{ display: 'flex', alignItems: 'center', gap: '14px' }}>
+                                    <div style={{
+                                        width: '56px',
+                                        height: '56px',
+                                        borderRadius: '14px',
+                                        background: `${mod.color}15`,
+                                        border: `1px solid ${mod.color}30`,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        justifyContent: 'center',
+                                        fontSize: '28px',
+                                        flexShrink: 0
+                                    }}>
+                                        {mod.icon}
+                                    </div>
+                                    <div>
+                                        <div style={{
+                                            fontSize: 'clamp(11px, 1vw, 13px)',
+                                            color: mod.color,
+                                            fontWeight: 600,
+                                            textTransform: 'uppercase',
+                                            letterSpacing: '1px'
+                                        }}>
+                                            Modulo {mod.num}
+                                        </div>
+                                        <div style={{
+                                            fontFamily: "'Space Grotesk', sans-serif",
+                                            fontSize: 'clamp(18px, 1.6vw, 24px)',
+                                            fontWeight: 700,
+                                            color: colors.text
+                                        }}>
+                                            {mod.title}
+                                        </div>
+                                    </div>
+                                </div>
+
+                                {/* Description */}
+                                <p style={{
+                                    fontSize: 'clamp(13px, 1.2vw, 16px)',
+                                    color: colors.textDim,
+                                    lineHeight: 1.6,
+                                    flex: 1
+                                }}>
+                                    {mod.desc}
+                                </p>
+
+                                {/* Tags */}
+                                <div style={{
+                                    display: 'flex',
+                                    flexWrap: 'wrap',
+                                    gap: '6px'
+                                }}>
+                                    {mod.tags.map(tag => (
+                                        <span key={tag} style={{
+                                            fontSize: 'clamp(10px, 0.9vw, 12px)',
+                                            padding: '3px 10px',
+                                            borderRadius: '50px',
+                                            background: `${mod.color}12`,
+                                            border: `1px solid ${mod.color}25`,
+                                            color: mod.color
+                                        }}>
+                                            {tag}
+                                        </span>
+                                    ))}
+                                </div>
+
+                                {/* Footer */}
+                                <div style={{
+                                    display: 'flex',
+                                    justifyContent: 'space-between',
+                                    alignItems: 'center',
+                                    paddingTop: '12px',
+                                    borderTop: `1px solid ${colors.border}`
+                                }}>
+                                    <span style={{
+                                        fontSize: 'clamp(11px, 1vw, 13px)',
+                                        color: colors.textMuted
+                                    }}>
+                                        {mod.slides} slide
+                                    </span>
+                                    <span style={{
+                                        fontSize: 'clamp(12px, 1.1vw, 14px)',
+                                        color: mod.color,
+                                        fontWeight: 600,
+                                        display: 'flex',
+                                        alignItems: 'center',
+                                        gap: '4px'
+                                    }}>
+                                        Apri →
+                                    </span>
+                                </div>
+                            </a>
+                        ))}
+                    </div>
+
+                    {/* Footer */}
+                    <div style={{
+                        textAlign: 'center',
+                        marginTop: 'clamp(30px, 4vw, 60px)',
+                        color: colors.textMuted,
+                        fontSize: 'clamp(11px, 1vw, 14px)'
+                    }}>
+                        Presentazione interattiva — Navigazione con tastiera (← → ESC)
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>

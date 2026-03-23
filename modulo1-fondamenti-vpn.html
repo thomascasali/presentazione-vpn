@@ -1,0 +1,955 @@
+<!DOCTYPE html>
+<html lang="it">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>Modulo 1 - Fondamenti VPN</title>
+    <link href="https://fonts.googleapis.com/css2?family=Inter:wght@300;400;600;700&family=JetBrains+Mono:wght@400;600&family=Space+Grotesk:wght@600;700&display=swap" rel="stylesheet">
+    <script crossorigin src="https://unpkg.com/react@18/umd/react.production.min.js"></script>
+    <script crossorigin src="https://unpkg.com/react-dom@18/umd/react-dom.production.min.js"></script>
+    <script src="https://unpkg.com/@babel/standalone/babel.min.js"></script>
+    <style>
+        * { margin: 0; padding: 0; box-sizing: border-box; }
+        body {
+            font-family: 'Inter', sans-serif;
+            background: #0a0e17;
+            color: #f1f5f9;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+        @media (max-width: 1024px) { html { font-size: 15px; } }
+        @media (max-width: 768px) { html { font-size: 14px; } .slide-grid { grid-template-columns: 1fr !important; } svg { max-width: 100% !important; } pre { white-space: pre-wrap !important; word-break: break-all !important; } }
+        @media (max-width: 480px) { html { font-size: 13px; } button { width: 100% !important; } }
+        @media (min-width: 1600px) { html { font-size: 18px; } }
+        @media (min-width: 2000px) { html { font-size: 20px; } }
+        @media (min-width: 2400px) { html { font-size: 22px; } }
+    </style>
+</head>
+<body>
+    <div id="root"></div>
+    <script type="text/babel">
+        const { useState, useEffect, useCallback } = React;
+
+        const colors = {
+            bg: '#0a0e17', bgCard: '#111827', bgLight: '#1e293b',
+            accent: '#00d4aa', accentAlt: '#0ea5e9',
+            text: '#f1f5f9', textDim: '#94a3b8', textMuted: '#64748b',
+            border: '#334155',
+            success: '#22c55e', danger: '#ef4444', warn: '#f59e0b',
+            info: '#0ea5e9', purple: '#a78bfa', cyan: '#22d3ee'
+        };
+
+        const MODULE_NUM = 1;
+        const MODULE_TITLE = 'Fondamenti VPN';
+        const MODULE_COLOR = '#00d4aa';
+        const NEXT_MODULE = { title: 'IPsec in Dettaglio', file: 'modulo2-ipsec.html' };
+
+        // ─── Componenti Riutilizzabili ───
+        const Code = ({ children, title }) => (
+            <pre style={{
+                background: '#0d1117',
+                border: `1px solid ${colors.border}`,
+                borderRadius: '12px',
+                padding: 'clamp(14px, 1.5vw, 20px)',
+                fontSize: 'clamp(12px, 1.1vw, 15px)',
+                fontFamily: "'JetBrains Mono', monospace",
+                overflowX: 'auto',
+                lineHeight: 1.7
+            }}>
+                {title && <div style={{ color: MODULE_COLOR, paddingBottom: '10px', fontWeight: 600 }}>{'// '}{title}</div>}
+                <code>{children}</code>
+            </pre>
+        );
+
+        const Box = ({ type, title, children }) => {
+            const colorMap = { info: colors.info, warn: colors.warn, danger: colors.danger, success: colors.success, tip: MODULE_COLOR };
+            const iconMap = { info: 'ℹ️', warn: '⚠️', danger: '❌', success: '✅', tip: '💡' };
+            return (
+                <div style={{
+                    borderLeft: `4px solid ${colorMap[type] || colors.info}`,
+                    padding: 'clamp(14px, 1.5vw, 20px)',
+                    margin: '16px 0',
+                    borderRadius: '0 12px 12px 0',
+                    background: colors.bgCard
+                }}>
+                    {title && <div style={{ color: colorMap[type], fontWeight: 700, marginBottom: '8px', fontSize: 'clamp(14px, 1.3vw, 18px)' }}>{iconMap[type]} {title}</div>}
+                    <div style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>{children}</div>
+                </div>
+            );
+        };
+
+        const Table = ({ headers, rows }) => (
+            <div style={{ overflowX: 'auto', margin: '16px 0' }}>
+                <table style={{ width: '100%', borderCollapse: 'collapse', fontSize: 'clamp(12px, 1.1vw, 16px)' }}>
+                    <thead>
+                        <tr>{headers.map((h, i) => (
+                            <th key={i} style={{ padding: 'clamp(8px, 1vw, 14px)', background: colors.bgLight, color: MODULE_COLOR, fontWeight: 700, textAlign: 'left', borderBottom: `2px solid ${MODULE_COLOR}40` }}>{h}</th>
+                        ))}</tr>
+                    </thead>
+                    <tbody>{rows.map((row, i) => (
+                        <tr key={i}>{row.map((cell, j) => (
+                            <td key={j} style={{ padding: 'clamp(8px, 1vw, 14px)', borderBottom: `1px solid ${colors.border}`, color: colors.textDim, background: i % 2 === 0 ? 'transparent' : `${colors.bgLight}40` }}>{cell}</td>
+                        ))}</tr>
+                    ))}</tbody>
+                </table>
+            </div>
+        );
+
+        const Glow = ({ children, color }) => (
+            <div style={{
+                border: `2px solid ${color || MODULE_COLOR}`,
+                borderRadius: '16px',
+                padding: 'clamp(16px, 2vw, 24px)',
+                boxShadow: `0 0 25px ${(color || MODULE_COLOR)}30`,
+                background: colors.bgCard
+            }}>
+                {children}
+            </div>
+        );
+
+        // ─── SLIDE ───
+
+        const SlideTitolo = () => (
+            <div style={{ display: 'flex', flexDirection: 'column', alignItems: 'center', justifyContent: 'center', minHeight: '70vh', textAlign: 'center', gap: '20px' }}>
+                <div style={{ fontSize: '72px' }}>🔒</div>
+                <div style={{ fontSize: 'clamp(12px, 1.1vw, 15px)', color: MODULE_COLOR, fontWeight: 600, textTransform: 'uppercase', letterSpacing: '2px' }}>Modulo {MODULE_NUM}</div>
+                <h1 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(36px, 4vw, 68px)', fontWeight: 700, background: `linear-gradient(135deg, ${MODULE_COLOR}, ${colors.accentAlt})`, WebkitBackgroundClip: 'text', WebkitTextFillColor: 'transparent' }}>
+                    {MODULE_TITLE}
+                </h1>
+                <p style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: colors.textDim, maxWidth: '600px' }}>
+                    Cos'è una VPN, perché serve e come funziona il tunneling sicuro su reti pubbliche
+                </p>
+            </div>
+        );
+
+        const SlideCosè = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Cos'è una <span style={{ color: MODULE_COLOR }}>VPN</span>?
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div>
+                        <Glow>
+                            <div style={{ fontSize: '36px', marginBottom: '12px' }}>🛣️</div>
+                            <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '12px' }}>L'Analogia</h3>
+                            <p style={{ color: colors.textDim, lineHeight: 1.7, fontSize: 'clamp(13px, 1.2vw, 17px)' }}>
+                                Immagina un'<strong style={{ color: colors.text }}>autostrada pubblica</strong> dove tutti possono vedere le auto che passano.
+                                Una VPN è come costruire un <strong style={{ color: MODULE_COLOR }}>tunnel privato</strong> dentro questa autostrada:
+                                nessuno dall'esterno può vedere cosa transita all'interno.
+                            </p>
+                        </Glow>
+                        <Box type="info" title="Definizione Formale">
+                            Una <strong>Virtual Private Network</strong> è una tecnologia che crea un collegamento sicuro e crittografato
+                            tra due punti attraverso una rete pubblica (Internet), simulando una connessione privata dedicata.
+                        </Box>
+                    </div>
+                    <div>
+                        <svg viewBox="0 0 500 380" style={{ width: '100%', maxWidth: '500px' }}>
+                            {/* Internet cloud */}
+                            <ellipse cx="250" cy="160" rx="200" ry="90" fill="none" stroke={colors.border} strokeWidth="2" strokeDasharray="8,4" />
+                            <text x="250" y="90" textAnchor="middle" fill={colors.textMuted} fontSize="14" fontFamily="Inter">🌐 Internet (rete pubblica)</text>
+
+                            {/* Tunnel */}
+                            <rect x="100" y="135" width="300" height="50" rx="25" fill={`${MODULE_COLOR}15`} stroke={MODULE_COLOR} strokeWidth="2" />
+                            <text x="250" y="165" textAnchor="middle" fill={MODULE_COLOR} fontSize="13" fontWeight="600" fontFamily="Inter">🔒 Tunnel VPN crittografato</text>
+
+                            {/* Device A */}
+                            <rect x="20" y="130" width="70" height="60" rx="8" fill={colors.bgCard} stroke={colors.accentAlt} strokeWidth="2" />
+                            <text x="55" y="155" textAnchor="middle" fill={colors.text} fontSize="20">💻</text>
+                            <text x="55" y="175" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Client</text>
+
+                            {/* Device B */}
+                            <rect x="410" y="130" width="70" height="60" rx="8" fill={colors.bgCard} stroke={colors.accentAlt} strokeWidth="2" />
+                            <text x="445" y="155" textAnchor="middle" fill={colors.text} fontSize="20">🏢</text>
+                            <text x="445" y="175" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Server</text>
+
+                            {/* Sniffers */}
+                            <text x="180" y="240" textAnchor="middle" fill={colors.danger} fontSize="11" fontFamily="Inter">👁️ Hacker non può</text>
+                            <text x="180" y="256" textAnchor="middle" fill={colors.danger} fontSize="11" fontFamily="Inter">leggere i dati</text>
+                            <line x1="180" y1="220" x2="200" y2="190" stroke={colors.danger} strokeWidth="1.5" strokeDasharray="4,3" />
+
+                            {/* Pacchetti nel tunnel */}
+                            <rect x="160" y="145" width="30" height="20" rx="4" fill={`${MODULE_COLOR}40`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="175" y="159" textAnchor="middle" fill={MODULE_COLOR} fontSize="9">📦</text>
+                            <rect x="230" y="145" width="30" height="20" rx="4" fill={`${MODULE_COLOR}40`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="245" y="159" textAnchor="middle" fill={MODULE_COLOR} fontSize="9">📦</text>
+                            <rect x="310" y="145" width="30" height="20" rx="4" fill={`${MODULE_COLOR}40`} stroke={MODULE_COLOR} strokeWidth="1" />
+                            <text x="325" y="159" textAnchor="middle" fill={MODULE_COLOR} fontSize="9">📦</text>
+
+                            {/* Key features */}
+                            <text x="55" y="280" fill={colors.text} fontSize="12" fontWeight="600" fontFamily="Inter">Caratteristiche chiave:</text>
+                            <text x="55" y="302" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">✓ Riservatezza (crittografia)</text>
+                            <text x="55" y="322" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">✓ Autenticazione (identità)</text>
+                            <text x="55" y="342" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter">✓ Integrità (anti-manomissione)</text>
+                            <text x="300" y="302" fill={colors.accentAlt} fontSize="11" fontFamily="Inter">✓ Tunneling (incapsulamento)</text>
+                            <text x="300" y="322" fill={colors.accentAlt} fontSize="11" fontFamily="Inter">✓ Trasparenza (per le app)</text>
+                            <text x="300" y="342" fill={colors.accentAlt} fontSize="11" fontFamily="Inter">✓ Economicità (usa Internet)</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideProblemi = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Perché serve? <span style={{ color: colors.danger }}>Minacce su rete pubblica</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px' }} className="slide-grid">
+                    {[
+                        { icon: '👁️', title: 'Packet Sniffing', desc: 'Un attaccante sulla stessa rete cattura il traffico in chiaro: password, email, dati sensibili sono visibili.', color: colors.danger },
+                        { icon: '🎭', title: 'Man-in-the-Middle', desc: 'L\'attaccante si posiziona tra client e server, intercettando e potenzialmente modificando i dati in transito.', color: colors.warn },
+                        { icon: '📡', title: 'Wi-Fi Sniffing', desc: 'Le reti Wi-Fi pubbliche (bar, hotel, aeroporti) sono terreno fertile: il traffico non cifrato è leggibile da chiunque.', color: colors.purple },
+                        { icon: '🕵️', title: 'Session Hijacking', desc: 'Un attaccante ruba il cookie di sessione dell\'utente per impersonarlo su servizi web senza conoscere le credenziali.', color: colors.info },
+                        { icon: '🔓', title: 'DNS Spoofing', desc: 'L\'attaccante falsifica le risposte DNS per redirigere l\'utente verso siti malevoli, rubando credenziali.', color: colors.cyan },
+                        { icon: '🛡️', title: 'La soluzione: VPN', desc: 'La VPN crittografa TUTTO il traffico, rendendo impossibile per un attaccante leggere o modificare i dati.', color: MODULE_COLOR }
+                    ].map((item, i) => (
+                        <div key={i} style={{
+                            background: colors.bgCard,
+                            border: `1px solid ${item.color}30`,
+                            borderRadius: '12px',
+                            padding: 'clamp(16px, 1.5vw, 22px)',
+                            transition: 'all 0.3s'
+                        }}>
+                            <div style={{ fontSize: '32px', marginBottom: '10px' }}>{item.icon}</div>
+                            <h3 style={{ color: item.color, fontSize: 'clamp(14px, 1.3vw, 19px)', fontWeight: 700, marginBottom: '8px' }}>{item.title}</h3>
+                            <p style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)', lineHeight: 1.6 }}>{item.desc}</p>
+                        </div>
+                    ))}
+                </div>
+            </div>
+        );
+
+        const SlideConcetti = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Concetti <span style={{ color: MODULE_COLOR }}>chiave</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <Glow color={MODULE_COLOR}>
+                        <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🚇 Tunneling</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            Incapsula un pacchetto IP originale all'interno di un <strong style={{ color: colors.text }}>nuovo pacchetto</strong> con header aggiuntivi.
+                            Come mettere una lettera dentro un'altra busta.
+                        </p>
+                        <Code title="Incapsulamento">
+{`[IP esterno][Header VPN][IP originale][Dati]
+  ↑ visibile         ↑ nascosto e crittografato`}
+                        </Code>
+                    </Glow>
+                    <Glow color={colors.accentAlt}>
+                        <h3 style={{ color: colors.accentAlt, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🔐 Crittografia</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '12px' }}>
+                            I dati vengono cifrati con algoritmi come <strong style={{ color: colors.text }}>AES-256</strong> prima della trasmissione.
+                            Anche se intercettati, risultano illeggibili senza la chiave.
+                        </p>
+                        <Code title="Esempio">
+{`Originale: "password123"
+Cifrato:   "7a3f9b2e...c4d1e8" (256 bit)
+→ Decifrabile solo con la chiave corretta`}
+                        </Code>
+                    </Glow>
+                    <Glow color={colors.warn}>
+                        <h3 style={{ color: colors.warn, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>🪪 Autenticazione</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7 }}>
+                            Verifica l'<strong style={{ color: colors.text }}>identità</strong> di chi si connette. Metodi: pre-shared key (PSK),
+                            certificati digitali (X.509), username/password, token MFA.
+                        </p>
+                    </Glow>
+                    <Glow color={colors.purple}>
+                        <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>✅ Integrità</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7 }}>
+                            Garantisce che i dati non siano stati <strong style={{ color: colors.text }}>alterati in transito</strong>. Si usa un hash (HMAC)
+                            calcolato sul pacchetto: se cambia anche un solo bit, il pacchetto viene scartato.
+                        </p>
+                    </Glow>
+                </div>
+            </div>
+        );
+
+        const SlideTipi = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Tipi di <span style={{ color: MODULE_COLOR }}>VPN</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    {/* Site-to-Site */}
+                    <div style={{ background: colors.bgCard, border: `1px solid ${colors.accentAlt}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>🏢↔️🏢</div>
+                        <h3 style={{ color: colors.accentAlt, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Site-to-Site</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
+                            Collega <strong style={{ color: colors.text }}>due reti intere</strong> (es. sede centrale e filiale) attraverso Internet.
+                            Il tunnel è permanente tra i gateway/router VPN.
+                        </p>
+                        <Box type="tip" title="Caso d'uso">
+                            Azienda con sede a Milano e filiale a Roma: i dipendenti accedono alle risorse come se fossero sulla stessa LAN.
+                        </Box>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                            <rect x="10" y="20" width="100" height="80" rx="10" fill={`${colors.accentAlt}10`} stroke={colors.accentAlt} strokeWidth="1.5" />
+                            <text x="60" y="55" textAnchor="middle" fill={colors.text} fontSize="18">🏢</text>
+                            <text x="60" y="80" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Sede A</text>
+                            <rect x="290" y="20" width="100" height="80" rx="10" fill={`${colors.accentAlt}10`} stroke={colors.accentAlt} strokeWidth="1.5" />
+                            <text x="340" y="55" textAnchor="middle" fill={colors.text} fontSize="18">🏢</text>
+                            <text x="340" y="80" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Sede B</text>
+                            <line x1="110" y1="60" x2="290" y2="60" stroke={MODULE_COLOR} strokeWidth="3" strokeDasharray="8,4" />
+                            <text x="200" y="50" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontWeight="600" fontFamily="Inter">Tunnel IPsec</text>
+                        </svg>
+                    </div>
+
+                    {/* Remote Access */}
+                    <div style={{ background: colors.bgCard, border: `1px solid ${MODULE_COLOR}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>💻→🏢</div>
+                        <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Remote Access</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
+                            Un <strong style={{ color: colors.text }}>singolo utente</strong> si connette alla rete aziendale da remoto.
+                            Richiede un client VPN installato sul dispositivo.
+                        </p>
+                        <Box type="tip" title="Caso d'uso">
+                            Dipendente in smart working che accede al server aziendale da casa tramite il client VPN.
+                        </Box>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                            <text x="40" y="35" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
+                            <text x="40" y="55" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Casa</text>
+                            <text x="40" y="80" textAnchor="middle" fill={colors.text} fontSize="18">📱</text>
+                            <text x="40" y="100" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Mobile</text>
+                            <rect x="290" y="20" width="100" height="80" rx="10" fill={`${MODULE_COLOR}10`} stroke={MODULE_COLOR} strokeWidth="1.5" />
+                            <text x="340" y="55" textAnchor="middle" fill={colors.text} fontSize="18">🏢</text>
+                            <text x="340" y="80" textAnchor="middle" fill={colors.textDim} fontSize="10" fontFamily="Inter">Azienda</text>
+                            <line x1="70" y1="35" x2="290" y2="55" stroke={MODULE_COLOR} strokeWidth="2" strokeDasharray="6,3" />
+                            <line x1="70" y1="85" x2="290" y2="65" stroke={MODULE_COLOR} strokeWidth="2" strokeDasharray="6,3" />
+                            <text x="180" y="45" textAnchor="middle" fill={MODULE_COLOR} fontSize="10" fontWeight="600" fontFamily="Inter">SSL/TLS VPN</text>
+                        </svg>
+                    </div>
+
+                    {/* Client-to-Client */}
+                    <div style={{ background: colors.bgCard, border: `1px solid ${colors.purple}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <div style={{ fontSize: '40px', marginBottom: '12px' }}>💻↔️💻</div>
+                        <h3 style={{ color: colors.purple, fontSize: 'clamp(16px, 1.5vw, 22px)', fontWeight: 700, marginBottom: '10px' }}>Client-to-Client (Mesh)</h3>
+                        <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.7, marginBottom: '14px' }}>
+                            Connessione diretta <strong style={{ color: colors.text }}>peer-to-peer</strong> tra dispositivi.
+                            Ogni nodo è sia client che server. Usata in reti mesh come WireGuard.
+                        </p>
+                        <Box type="tip" title="Caso d'uso">
+                            Team distribuito che condivide risorse direttamente tra i propri dispositivi senza server centrale.
+                        </Box>
+                        <svg viewBox="0 0 400 120" style={{ width: '100%' }}>
+                            <text x="60" y="40" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
+                            <text x="200" y="110" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
+                            <text x="340" y="40" textAnchor="middle" fill={colors.text} fontSize="18">💻</text>
+                            <line x1="80" y1="40" x2="320" y2="40" stroke={colors.purple} strokeWidth="2" strokeDasharray="6,3" />
+                            <line x1="70" y1="50" x2="190" y2="100" stroke={colors.purple} strokeWidth="2" strokeDasharray="6,3" />
+                            <line x1="330" y1="50" x2="210" y2="100" stroke={colors.purple} strokeWidth="2" strokeDasharray="6,3" />
+                            <text x="200" y="55" textAnchor="middle" fill={colors.purple} fontSize="10" fontWeight="600" fontFamily="Inter">WireGuard Mesh</text>
+                        </svg>
+                    </div>
+                </div>
+            </div>
+        );
+
+        const SlideProtocolli = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Protocolli di <span style={{ color: MODULE_COLOR }}>tunneling</span>
+                </h2>
+                <Table
+                    headers={['Protocollo', 'Livello OSI', 'Crittografia', 'Velocità', 'Uso tipico']}
+                    rows={[
+                        [<strong style={{ color: colors.accentAlt }}>IPsec</strong>, 'Rete (L3)', 'AES-256, 3DES', '⭐⭐⭐', 'Site-to-Site, enterprise'],
+                        [<strong style={{ color: MODULE_COLOR }}>SSL/TLS</strong>, 'Trasporto (L4)', 'AES-256-GCM', '⭐⭐⭐', 'Remote Access, web'],
+                        [<strong style={{ color: colors.purple }}>WireGuard</strong>, 'Rete (L3)', 'ChaCha20-Poly1305', '⭐⭐⭐⭐⭐', 'Moderno, mobile, mesh'],
+                        [<strong style={{ color: colors.warn }}>OpenVPN</strong>, 'Trasporto (L4)', 'AES-256-CBC/GCM', '⭐⭐⭐⭐', 'Versatile, cross-platform'],
+                        [<strong style={{ color: colors.textMuted }}>PPTP</strong>, 'Data Link (L2)', 'MPPE (debole)', '⭐⭐⭐⭐', <span style={{ color: colors.danger }}>⚠️ Deprecato, insicuro</span>],
+                        [<strong style={{ color: colors.textMuted }}>L2TP/IPsec</strong>, 'Data Link (L2)', 'Via IPsec', '⭐⭐⭐', 'Legacy, sostituito da IKEv2']
+                    ]}
+                />
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '16px', marginTop: '20px' }} className="slide-grid">
+                    <Box type="success" title="Moderni e consigliati">
+                        <strong>WireGuard</strong>: il più veloce, codice minimale (~4000 righe), crittografia moderna.<br/>
+                        <strong>OpenVPN</strong>: maturo, flessibile, ottimo per scenari complessi.<br/>
+                        <strong>IPsec/IKEv2</strong>: standard enterprise, supporto nativo su molti OS.
+                    </Box>
+                    <Box type="danger" title="Da evitare">
+                        <strong>PPTP</strong>: crittografia MPPE rotta, vulnerabile ad attacchi. Non usare MAI per dati sensibili.<br/>
+                        <strong>L2TP senza IPsec</strong>: nessuna crittografia nativa.
+                    </Box>
+                </div>
+            </div>
+        );
+
+        const SlideTunneling = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Come funziona il <span style={{ color: MODULE_COLOR }}>tunneling</span>
+                </h2>
+                <svg viewBox="0 0 700 350" style={{ width: '100%', maxWidth: '800px', margin: '0 auto', display: 'block' }}>
+                    {/* Pacchetto originale */}
+                    <text x="30" y="30" fill={colors.text} fontSize="14" fontWeight="600" fontFamily="Inter">1. Pacchetto originale</text>
+                    <rect x="30" y="40" width="120" height="40" rx="6" fill={`${colors.accentAlt}25`} stroke={colors.accentAlt} strokeWidth="2" />
+                    <text x="90" y="65" textAnchor="middle" fill={colors.accentAlt} fontSize="12" fontFamily="Inter" fontWeight="600">IP Header</text>
+                    <rect x="150" y="40" width="200" height="40" rx="6" fill={`${colors.warn}20`} stroke={colors.warn} strokeWidth="2" />
+                    <text x="250" y="65" textAnchor="middle" fill={colors.warn} fontSize="12" fontFamily="Inter" fontWeight="600">Payload (dati in chiaro)</text>
+
+                    {/* Arrow */}
+                    <text x="350" y="105" fill={MODULE_COLOR} fontSize="20">↓</text>
+                    <text x="380" y="105" fill={colors.textDim} fontSize="12" fontFamily="Inter">Crittografia + Incapsulamento</text>
+
+                    {/* Pacchetto VPN */}
+                    <text x="30" y="140" fill={colors.text} fontSize="14" fontWeight="600" fontFamily="Inter">2. Pacchetto VPN (crittografato)</text>
+                    <rect x="30" y="150" width="100" height="40" rx="6" fill={`${MODULE_COLOR}25`} stroke={MODULE_COLOR} strokeWidth="2" />
+                    <text x="80" y="175" textAnchor="middle" fill={MODULE_COLOR} fontSize="11" fontFamily="Inter" fontWeight="600">Nuovo IP</text>
+                    <rect x="130" y="150" width="80" height="40" rx="6" fill={`${colors.purple}25`} stroke={colors.purple} strokeWidth="2" />
+                    <text x="170" y="175" textAnchor="middle" fill={colors.purple} fontSize="11" fontFamily="Inter" fontWeight="600">VPN Hdr</text>
+                    <rect x="210" y="150" width="280" height="40" rx="6" fill={`${colors.danger}15`} stroke={colors.danger} strokeWidth="2" strokeDasharray="6,3" />
+                    <text x="350" y="170" textAnchor="middle" fill={colors.danger} fontSize="11" fontFamily="Inter" fontWeight="600">🔒 IP originale + Payload (cifrato)</text>
+                    <text x="350" y="183" textAnchor="middle" fill={colors.textMuted} fontSize="9" fontFamily="Inter">illeggibile senza la chiave</text>
+
+                    {/* Viaggio su internet */}
+                    <text x="350" y="220" fill={MODULE_COLOR} fontSize="20">↓</text>
+                    <text x="380" y="220" fill={colors.textDim} fontSize="12" fontFamily="Inter">Transita su Internet</text>
+
+                    {/* Decrittografia */}
+                    <text x="30" y="255" fill={colors.text} fontSize="14" fontWeight="600" fontFamily="Inter">3. Decapsulamento a destinazione</text>
+                    <rect x="30" y="265" width="120" height="40" rx="6" fill={`${colors.accentAlt}25`} stroke={colors.accentAlt} strokeWidth="2" />
+                    <text x="90" y="290" textAnchor="middle" fill={colors.accentAlt} fontSize="12" fontFamily="Inter" fontWeight="600">IP Header</text>
+                    <rect x="150" y="265" width="200" height="40" rx="6" fill={`${colors.success}20`} stroke={colors.success} strokeWidth="2" />
+                    <text x="250" y="290" textAnchor="middle" fill={colors.success} fontSize="12" fontFamily="Inter" fontWeight="600">✅ Payload (di nuovo in chiaro)</text>
+
+                    <text x="380" y="290" fill={colors.textDim} fontSize="12" fontFamily="Inter">→ Consegnato al destinatario</text>
+                </svg>
+                <Box type="info" title="Overhead">
+                    L'incapsulamento aggiunge header extra, quindi la <strong>MTU effettiva</strong> diminuisce.
+                    Esempio: MTU Ethernet 1500 → con IPsec ESP/tunnel → ~1400 byte utili.
+                    Per questo le VPN possono ridurre leggermente le performance.
+                </Box>
+            </div>
+        );
+
+        const SlideConfronto = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    VPN vs <span style={{ color: colors.danger }}>Senza VPN</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '24px' }} className="slide-grid">
+                    <div style={{ background: colors.bgCard, border: `1px solid ${colors.danger}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <h3 style={{ color: colors.danger, fontSize: 'clamp(18px, 1.7vw, 26px)', fontWeight: 700, marginBottom: '20px' }}>❌ Senza VPN</h3>
+                        {[
+                            'Dati trasmessi in chiaro su Internet',
+                            'IP e posizione reali visibili',
+                            'Traffico intercettabile su Wi-Fi pubblico',
+                            'DNS queries visibili al provider ISP',
+                            'Nessuna protezione da MITM',
+                            'Accesso diretto a risorse interne impossibile'
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                <span style={{ color: colors.danger, flexShrink: 0 }}>✗</span>
+                                <span style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.5 }}>{item}</span>
+                            </div>
+                        ))}
+                    </div>
+                    <div style={{ background: colors.bgCard, border: `1px solid ${MODULE_COLOR}40`, borderRadius: '16px', padding: 'clamp(18px, 2vw, 28px)' }}>
+                        <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(18px, 1.7vw, 26px)', fontWeight: 700, marginBottom: '20px' }}>✅ Con VPN</h3>
+                        {[
+                            'Tutto il traffico è crittografato end-to-end',
+                            'IP mascherato dal server VPN',
+                            'Protezione completa su qualsiasi rete',
+                            'DNS queries crittografate nel tunnel',
+                            'Autenticazione reciproca client-server',
+                            'Accesso sicuro a risorse interne aziendali'
+                        ].map((item, i) => (
+                            <div key={i} style={{ display: 'flex', gap: '10px', alignItems: 'flex-start', marginBottom: '12px' }}>
+                                <span style={{ color: MODULE_COLOR, flexShrink: 0 }}>✓</span>
+                                <span style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', lineHeight: 1.5 }}>{item}</span>
+                            </div>
+                        ))}
+                    </div>
+                </div>
+                <Box type="warn" title="Attenzione">
+                    Una VPN <strong>non rende anonimi al 100%</strong>. Il provider VPN può vedere il traffico. Inoltre non protegge da phishing, malware o errori dell'utente.
+                    L'anonimato completo richiede tecnologie aggiuntive (es. Tor).
+                </Box>
+            </div>
+        );
+
+        // ─── SIMULATORE ───
+        const SlideSimulatore = () => {
+            const [selectedScenario, setSelectedScenario] = useState(null);
+            const [showEncrypted, setShowEncrypted] = useState(false);
+
+            const scenarios = [
+                {
+                    name: 'Login HTTP',
+                    icon: '🔓',
+                    original: {
+                        srcIP: '192.168.1.100',
+                        dstIP: '93.184.216.34',
+                        proto: 'HTTP',
+                        payload: 'POST /login\nHost: esempio.com\nUser: mario\nPassword: Segreto123!'
+                    }
+                },
+                {
+                    name: 'Email SMTP',
+                    icon: '📧',
+                    original: {
+                        srcIP: '192.168.1.100',
+                        dstIP: '74.125.200.108',
+                        proto: 'SMTP',
+                        payload: 'MAIL FROM: mario@azienda.it\nRCPT TO: cliente@test.com\nSubject: Offerta riservata\nCorpo: Il prezzo è 50.000€...'
+                    }
+                },
+                {
+                    name: 'DNS Query',
+                    icon: '🔍',
+                    original: {
+                        srcIP: '192.168.1.100',
+                        dstIP: '8.8.8.8',
+                        proto: 'DNS',
+                        payload: 'Query: A record\nDominio: intranet.azienda.it\n→ Rivela che stai accedendo\n  alla rete aziendale interna'
+                    }
+                },
+                {
+                    name: 'File Transfer',
+                    icon: '📁',
+                    original: {
+                        srcIP: '192.168.1.100',
+                        dstIP: '10.0.1.50',
+                        proto: 'FTP',
+                        payload: 'USER admin\nPASS SecretFTP2024\nRETR bilancio_2024.xlsx\n→ File riservato in chiaro'
+                    }
+                }
+            ];
+
+            const generateEncrypted = (text) => {
+                const chars = '0123456789abcdef';
+                let result = '';
+                for (let i = 0; i < text.length; i++) {
+                    if (text[i] === '\n') { result += '\n'; continue; }
+                    result += chars[Math.floor(Math.random() * 16)] + chars[Math.floor(Math.random() * 16)];
+                    if (i % 16 === 15) result += '\n';
+                }
+                return result.substring(0, 120) + '...';
+            };
+
+            const sc = selectedScenario !== null ? scenarios[selectedScenario] : null;
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Simulatore: <span style={{ color: MODULE_COLOR }}>Incapsulamento VPN</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '20px' }}>
+                        Seleziona uno scenario per vedere come i dati appaiono prima e dopo l'incapsulamento VPN.
+                    </p>
+
+                    {/* Scenario buttons */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
+                        {scenarios.map((s, i) => (
+                            <button key={i} onClick={() => { setSelectedScenario(i); setShowEncrypted(false); }} style={{
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                border: `2px solid ${selectedScenario === i ? MODULE_COLOR : colors.border}`,
+                                background: selectedScenario === i ? `${MODULE_COLOR}20` : colors.bgCard,
+                                color: selectedScenario === i ? MODULE_COLOR : colors.textDim,
+                                cursor: 'pointer',
+                                fontSize: 'clamp(13px, 1.2vw, 16px)',
+                                fontFamily: 'Inter',
+                                fontWeight: 600,
+                                transition: 'all 0.2s'
+                            }}>
+                                {s.icon} {s.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {sc && (
+                        <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(300px, 1fr))', gap: '20px' }} className="slide-grid">
+                            {/* Pacchetto originale */}
+                            <div style={{
+                                background: colors.bgCard,
+                                border: `2px solid ${colors.danger}50`,
+                                borderRadius: '16px',
+                                padding: 'clamp(16px, 1.5vw, 24px)'
+                            }}>
+                                <h3 style={{ color: colors.danger, fontSize: 'clamp(15px, 1.4vw, 20px)', marginBottom: '16px' }}>
+                                    ❌ Senza VPN — Pacchetto in chiaro
+                                </h3>
+                                <div style={{ fontSize: 'clamp(12px, 1.1vw, 14px)', fontFamily: "'JetBrains Mono', monospace" }}>
+                                    <div style={{ color: colors.accentAlt, marginBottom: '4px' }}>┌─ IP Header ─────────────┐</div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Src: <span style={{ color: colors.text }}>{sc.original.srcIP}</span></div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Dst: <span style={{ color: colors.text }}>{sc.original.dstIP}</span></div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Proto: <span style={{ color: colors.text }}>{sc.original.proto}</span></div>
+                                    <div style={{ color: colors.accentAlt, margin: '8px 0 4px' }}>┌─ Payload (VISIBILE!) ───┐</div>
+                                    <pre style={{
+                                        color: colors.danger,
+                                        paddingLeft: '8px',
+                                        whiteSpace: 'pre-wrap',
+                                        fontSize: 'clamp(11px, 1vw, 14px)',
+                                        lineHeight: 1.6
+                                    }}>{sc.original.payload}</pre>
+                                </div>
+                                <Box type="danger" title="Rischio">
+                                    Qualsiasi attaccante sulla rete può leggere questi dati!
+                                </Box>
+                            </div>
+
+                            {/* Pacchetto VPN */}
+                            <div style={{
+                                background: colors.bgCard,
+                                border: `2px solid ${MODULE_COLOR}50`,
+                                borderRadius: '16px',
+                                padding: 'clamp(16px, 1.5vw, 24px)'
+                            }}>
+                                <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(15px, 1.4vw, 20px)', marginBottom: '16px' }}>
+                                    ✅ Con VPN — Pacchetto crittografato
+                                </h3>
+                                <div style={{ fontSize: 'clamp(12px, 1.1vw, 14px)', fontFamily: "'JetBrains Mono', monospace" }}>
+                                    <div style={{ color: MODULE_COLOR, marginBottom: '4px' }}>┌─ Nuovo IP Header ───────┐</div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Src: <span style={{ color: colors.text }}>10.8.0.2</span> <span style={{ color: colors.textMuted }}>(IP VPN)</span></div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Dst: <span style={{ color: colors.text }}>vpn.azienda.it</span></div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Proto: <span style={{ color: colors.text }}>ESP/UDP 443</span></div>
+                                    <div style={{ color: colors.purple, margin: '8px 0 4px' }}>┌─ VPN Header ────────────┐</div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>SPI: <span style={{ color: colors.text }}>0xA3F29B01</span></div>
+                                    <div style={{ color: colors.textDim, paddingLeft: '8px' }}>Seq: <span style={{ color: colors.text }}>0x00000147</span></div>
+                                    <div style={{ color: MODULE_COLOR, margin: '8px 0 4px' }}>┌─ Payload (CRITTOGRAFATO) ┐</div>
+                                    {!showEncrypted ? (
+                                        <div style={{ textAlign: 'center', padding: '16px' }}>
+                                            <button onClick={() => setShowEncrypted(true)} style={{
+                                                padding: '10px 24px',
+                                                borderRadius: '10px',
+                                                border: `2px solid ${MODULE_COLOR}`,
+                                                background: `${MODULE_COLOR}20`,
+                                                color: MODULE_COLOR,
+                                                cursor: 'pointer',
+                                                fontSize: 'clamp(13px, 1.2vw, 16px)',
+                                                fontFamily: 'Inter',
+                                                fontWeight: 600
+                                            }}>
+                                                🔓 Mostra dati crittografati
+                                            </button>
+                                        </div>
+                                    ) : (
+                                        <pre style={{
+                                            color: colors.textMuted,
+                                            paddingLeft: '8px',
+                                            whiteSpace: 'pre-wrap',
+                                            fontSize: 'clamp(10px, 0.9vw, 13px)',
+                                            lineHeight: 1.6,
+                                            wordBreak: 'break-all'
+                                        }}>{generateEncrypted(sc.original.payload)}</pre>
+                                    )}
+                                </div>
+                                <Box type="success" title="Protetto">
+                                    IP reali nascosti, payload illeggibile, protocollo mascherato. L'attaccante vede solo traffico cifrato verso il server VPN.
+                                </Box>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SlideSimulatore2 = () => {
+            const [attackType, setAttackType] = useState(null);
+            const [vpnActive, setVpnActive] = useState(false);
+            const [animating, setAnimating] = useState(false);
+
+            const attacks = [
+                { id: 'sniff', name: 'Packet Sniffing', icon: '👁️', desc: 'L\'attaccante cattura i pacchetti sulla rete', noVpn: 'Dati leggibili: password, email, file', vpn: 'Solo dati cifrati: 7a3f9b2e...c4d1e8', color: colors.danger },
+                { id: 'mitm', name: 'Man-in-the-Middle', icon: '🎭', desc: 'L\'attaccante intercetta e modifica il traffico', noVpn: 'Può alterare i dati in transito', vpn: 'Non può decifrare né modificare i dati (integrità HMAC)', color: colors.warn },
+                { id: 'dns', name: 'DNS Spoofing', icon: '🔓', desc: 'L\'attaccante falsifica le risposte DNS', noVpn: 'Reindirizzamento a siti malevoli', vpn: 'DNS nel tunnel VPN, risposte falsificate ignorate', color: colors.purple }
+            ];
+
+            const handleSimulate = (id) => {
+                setAttackType(id);
+                setAnimating(true);
+                setTimeout(() => setAnimating(false), 1000);
+            };
+
+            const atk = attacks.find(a => a.id === attackType);
+
+            return (
+                <div>
+                    <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '8px' }}>
+                        🧪 Simulatore: <span style={{ color: MODULE_COLOR }}>Attacco e Difesa</span>
+                    </h2>
+                    <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '16px' }}>
+                        Simula un attacco e confronta il risultato con e senza VPN attiva.
+                    </p>
+
+                    {/* VPN toggle */}
+                    <div style={{ display: 'flex', alignItems: 'center', gap: '14px', marginBottom: '20px' }}>
+                        <span style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 16px)' }}>VPN:</span>
+                        <button onClick={() => setVpnActive(!vpnActive)} style={{
+                            padding: '8px 24px',
+                            borderRadius: '50px',
+                            border: `2px solid ${vpnActive ? MODULE_COLOR : colors.danger}`,
+                            background: vpnActive ? `${MODULE_COLOR}20` : `${colors.danger}20`,
+                            color: vpnActive ? MODULE_COLOR : colors.danger,
+                            cursor: 'pointer',
+                            fontWeight: 700,
+                            fontSize: 'clamp(13px, 1.2vw, 16px)',
+                            fontFamily: 'Inter',
+                            transition: 'all 0.3s'
+                        }}>
+                            {vpnActive ? '🔒 ATTIVA' : '🔓 DISATTIVA'}
+                        </button>
+                    </div>
+
+                    {/* Attack buttons */}
+                    <div style={{ display: 'flex', flexWrap: 'wrap', gap: '10px', marginBottom: '24px' }}>
+                        {attacks.map(a => (
+                            <button key={a.id} onClick={() => handleSimulate(a.id)} style={{
+                                padding: '10px 18px',
+                                borderRadius: '10px',
+                                border: `2px solid ${attackType === a.id ? a.color : colors.border}`,
+                                background: attackType === a.id ? `${a.color}20` : colors.bgCard,
+                                color: attackType === a.id ? a.color : colors.textDim,
+                                cursor: 'pointer',
+                                fontSize: 'clamp(13px, 1.2vw, 16px)',
+                                fontFamily: 'Inter',
+                                fontWeight: 600,
+                                transition: 'all 0.2s'
+                            }}>
+                                {a.icon} {a.name}
+                            </button>
+                        ))}
+                    </div>
+
+                    {atk && (
+                        <div style={{
+                            background: colors.bgCard,
+                            border: `2px solid ${vpnActive ? MODULE_COLOR : atk.color}50`,
+                            borderRadius: '16px',
+                            padding: 'clamp(18px, 2vw, 28px)',
+                            transition: 'all 0.3s',
+                            opacity: animating ? 0.5 : 1
+                        }}>
+                            <h3 style={{ fontSize: 'clamp(16px, 1.5vw, 22px)', color: atk.color, marginBottom: '10px' }}>
+                                {atk.icon} Attacco: {atk.name}
+                            </h3>
+                            <p style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 17px)', marginBottom: '20px' }}>{atk.desc}</p>
+
+                            {/* SVG visualization */}
+                            <svg viewBox="0 0 600 150" style={{ width: '100%', maxWidth: '700px', margin: '0 auto 20px', display: 'block' }}>
+                                {/* Client */}
+                                <rect x="20" y="40" width="80" height="60" rx="10" fill={colors.bgLight} stroke={colors.accentAlt} strokeWidth="2" />
+                                <text x="60" y="70" textAnchor="middle" fill={colors.text} fontSize="22">💻</text>
+                                <text x="60" y="90" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Client</text>
+
+                                {/* Attacker */}
+                                <rect x="250" y="0" width="80" height="50" rx="10" fill={`${atk.color}15`} stroke={atk.color} strokeWidth="2" />
+                                <text x="290" y="28" textAnchor="middle" fill={colors.text} fontSize="18">🕵️</text>
+                                <text x="290" y="45" textAnchor="middle" fill={atk.color} fontSize="9" fontFamily="Inter">Attacker</text>
+
+                                {/* Server */}
+                                <rect x="490" y="40" width="80" height="60" rx="10" fill={colors.bgLight} stroke={MODULE_COLOR} strokeWidth="2" />
+                                <text x="530" y="70" textAnchor="middle" fill={colors.text} fontSize="22">🏢</text>
+                                <text x="530" y="90" textAnchor="middle" fill={colors.textDim} fontSize="9" fontFamily="Inter">Server</text>
+
+                                {/* Connection line */}
+                                {vpnActive ? (
+                                    <>
+                                        <rect x="110" y="55" width="370" height="30" rx="15" fill={`${MODULE_COLOR}10`} stroke={MODULE_COLOR} strokeWidth="2" />
+                                        <text x="295" y="75" textAnchor="middle" fill={MODULE_COLOR} fontSize="11" fontWeight="600" fontFamily="Inter">🔒 Tunnel VPN crittografato</text>
+                                        <line x1="290" y1="50" x2="290" y2="55" stroke={atk.color} strokeWidth="2" strokeDasharray="4,3" />
+                                        <text x="290" y="120" textAnchor="middle" fill={atk.color} fontSize="10" fontFamily="Inter">✗ Non riesce a leggere</text>
+                                    </>
+                                ) : (
+                                    <>
+                                        <line x1="100" y1="70" x2="490" y2="70" stroke={colors.border} strokeWidth="2" />
+                                        <text x="295" y="65" textAnchor="middle" fill={colors.textMuted} fontSize="10" fontFamily="Inter">Connessione in chiaro</text>
+                                        <line x1="290" y1="50" x2="290" y2="65" stroke={atk.color} strokeWidth="2" />
+                                        <text x="290" y="120" textAnchor="middle" fill={atk.color} fontSize="10" fontFamily="Inter">✓ Intercetta tutto!</text>
+                                    </>
+                                )}
+                            </svg>
+
+                            {/* Result */}
+                            <div style={{
+                                padding: '16px',
+                                borderRadius: '12px',
+                                background: vpnActive ? `${MODULE_COLOR}10` : `${atk.color}10`,
+                                border: `1px solid ${vpnActive ? MODULE_COLOR : atk.color}40`
+                            }}>
+                                <div style={{ fontWeight: 700, fontSize: 'clamp(14px, 1.3vw, 18px)', color: vpnActive ? MODULE_COLOR : atk.color, marginBottom: '6px' }}>
+                                    {vpnActive ? '🛡️ Attacco neutralizzato' : '⚠️ Attacco riuscito'}
+                                </div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(13px, 1.2vw, 16px)' }}>
+                                    {vpnActive ? atk.vpn : atk.noVpn}
+                                </div>
+                            </div>
+                        </div>
+                    )}
+                </div>
+            );
+        };
+
+        const SlideBestPractices = () => (
+            <div>
+                <h2 style={{ fontFamily: "'Space Grotesk', sans-serif", fontSize: 'clamp(24px, 2.5vw, 44px)', fontWeight: 700, color: colors.text, marginBottom: '24px' }}>
+                    Best Practices e <span style={{ color: MODULE_COLOR }}>Riepilogo</span>
+                </h2>
+                <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(280px, 1fr))', gap: '20px', marginBottom: '24px' }} className="slide-grid">
+                    <Box type="success" title="Cosa fare">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {[
+                                'Usare sempre VPN su Wi-Fi pubblico',
+                                'Preferire protocolli moderni (WireGuard, IKEv2)',
+                                'Verificare che il kill switch sia attivo',
+                                'Usare crittografia AES-256 o ChaCha20',
+                                'Configurare DNS nel tunnel VPN'
+                            ].map((item, i) => (
+                                <li key={i} style={{ marginBottom: '8px' }}>
+                                    <span style={{ color: colors.success }}>✓</span> {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </Box>
+                    <Box type="danger" title="Cosa evitare">
+                        <ul style={{ listStyle: 'none', padding: 0 }}>
+                            {[
+                                'Non usare MAI PPTP per dati sensibili',
+                                'Non fidarsi di VPN gratuite (vendono dati)',
+                                'Non disabilitare il firewall con VPN attiva',
+                                'Non ignorare avvisi di certificato scaduto',
+                                'Non confondere VPN con anonimato totale'
+                            ].map((item, i) => (
+                                <li key={i} style={{ marginBottom: '8px' }}>
+                                    <span style={{ color: colors.danger }}>✗</span> {item}
+                                </li>
+                            ))}
+                        </ul>
+                    </Box>
+                </div>
+
+                <Glow>
+                    <h3 style={{ color: MODULE_COLOR, fontSize: 'clamp(16px, 1.5vw, 22px)', marginBottom: '14px' }}>📋 Riepilogo Modulo 1</h3>
+                    <div style={{ display: 'grid', gridTemplateColumns: 'repeat(auto-fit, minmax(200px, 1fr))', gap: '14px' }} className="slide-grid">
+                        {[
+                            { label: 'VPN', value: 'Tunnel privato su rete pubblica' },
+                            { label: 'Pilastri', value: 'Tunneling, Crittografia, Autenticazione, Integrità' },
+                            { label: 'Tipi', value: 'Site-to-Site, Remote Access, Client-to-Client' },
+                            { label: 'Protocolli', value: 'IPsec, SSL/TLS, WireGuard, OpenVPN' },
+                            { label: 'Minacce', value: 'Sniffing, MITM, DNS Spoofing, Session Hijacking' },
+                            { label: 'Prossimo', value: 'Modulo 2: IPsec in dettaglio →' }
+                        ].map((item, i) => (
+                            <div key={i} style={{ padding: '10px', borderRadius: '8px', background: colors.bgLight }}>
+                                <div style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(11px, 1vw, 14px)', marginBottom: '4px' }}>{item.label}</div>
+                                <div style={{ color: colors.textDim, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{item.value}</div>
+                            </div>
+                        ))}
+                    </div>
+                </Glow>
+            </div>
+        );
+
+        // ─── SLIDE ARRAY ───
+        const slides = [
+            SlideTitolo,
+            SlideCosè,
+            SlideProblemi,
+            SlideConcetti,
+            SlideTipi,
+            SlideProtocolli,
+            SlideTunneling,
+            SlideConfronto,
+            SlideSimulatore,
+            SlideSimulatore2,
+            SlideBestPractices
+        ];
+
+        // ─── APP ───
+        const App = () => {
+            const [currentSlide, setCurrentSlide] = useState(0);
+            const total = slides.length;
+
+            const goNext = useCallback(() => setCurrentSlide(s => Math.min(s + 1, total - 1)), [total]);
+            const goPrev = useCallback(() => setCurrentSlide(s => Math.max(s - 1, 0)), []);
+            const goIndex = useCallback(() => { window.location.href = 'index.html'; }, []);
+
+            useEffect(() => {
+                const handleKey = (e) => {
+                    if (e.key === 'ArrowRight' || e.key === ' ') { e.preventDefault(); goNext(); }
+                    if (e.key === 'ArrowLeft') { e.preventDefault(); goPrev(); }
+                    if (e.key === 'Escape') goIndex();
+                };
+                window.addEventListener('keydown', handleKey);
+                return () => window.removeEventListener('keydown', handleKey);
+            }, [goNext, goPrev, goIndex]);
+
+            const SlideComponent = slides[currentSlide];
+
+            return (
+                <div style={{ minHeight: '100vh', display: 'flex', flexDirection: 'column' }}>
+                    {/* Top bar */}
+                    <div style={{
+                        position: 'fixed', top: 0, left: 0, right: 0, zIndex: 100,
+                        background: `${colors.bg}ee`, backdropFilter: 'blur(12px)',
+                        borderBottom: `1px solid ${colors.border}`,
+                        padding: '10px 20px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                        <a href="index.html" style={{ color: colors.textDim, textDecoration: 'none', fontSize: 'clamp(12px, 1.1vw, 15px)' }}>← Indice</a>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '12px' }}>
+                            <span style={{ color: MODULE_COLOR, fontWeight: 700, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>M{MODULE_NUM}</span>
+                            <span style={{ color: colors.text, fontSize: 'clamp(12px, 1.1vw, 15px)' }}>{MODULE_TITLE}</span>
+                        </div>
+                        <div style={{ display: 'flex', alignItems: 'center', gap: '10px' }}>
+                            <span style={{ color: colors.textMuted, fontSize: 'clamp(11px, 1vw, 14px)' }}>{currentSlide + 1} / {total}</span>
+                            <div style={{ width: '80px', height: '4px', background: colors.bgLight, borderRadius: '2px', overflow: 'hidden' }}>
+                                <div style={{ width: `${((currentSlide + 1) / total) * 100}%`, height: '100%', background: MODULE_COLOR, borderRadius: '2px', transition: 'width 0.3s' }} />
+                            </div>
+                        </div>
+                    </div>
+
+                    {/* Content */}
+                    <div style={{
+                        flex: 1,
+                        maxWidth: '2200px',
+                        width: '94%',
+                        margin: '0 auto',
+                        padding: '70px 0 80px'
+                    }}>
+                        <SlideComponent />
+                    </div>
+
+                    {/* Bottom bar */}
+                    <div style={{
+                        position: 'fixed', bottom: 0, left: 0, right: 0, zIndex: 100,
+                        background: `${colors.bg}ee`, backdropFilter: 'blur(12px)',
+                        borderTop: `1px solid ${colors.border}`,
+                        padding: '10px 20px',
+                        display: 'flex', alignItems: 'center', justifyContent: 'space-between'
+                    }}>
+                        <button onClick={goPrev} disabled={currentSlide === 0} style={{
+                            padding: '8px 20px', borderRadius: '8px', border: `1px solid ${colors.border}`,
+                            background: currentSlide === 0 ? 'transparent' : colors.bgLight,
+                            color: currentSlide === 0 ? colors.textMuted : colors.text,
+                            cursor: currentSlide === 0 ? 'default' : 'pointer',
+                            fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter'
+                        }}>← Indietro</button>
+
+                        <div style={{ display: 'flex', gap: '16px', fontSize: 'clamp(11px, 1vw, 14px)' }}>
+                            {currentSlide === 0 && <a href="index.html" style={{ color: colors.textMuted, textDecoration: 'none' }}>← Indice moduli</a>}
+                            {currentSlide === total - 1 && NEXT_MODULE && (
+                                <a href={NEXT_MODULE.file} style={{ color: MODULE_COLOR, textDecoration: 'none', fontWeight: 600 }}>
+                                    {NEXT_MODULE.title} →
+                                </a>
+                            )}
+                        </div>
+
+                        <button onClick={goNext} disabled={currentSlide === total - 1} style={{
+                            padding: '8px 20px', borderRadius: '8px', border: `1px solid ${MODULE_COLOR}`,
+                            background: currentSlide === total - 1 ? 'transparent' : `${MODULE_COLOR}20`,
+                            color: currentSlide === total - 1 ? colors.textMuted : MODULE_COLOR,
+                            cursor: currentSlide === total - 1 ? 'default' : 'pointer',
+                            fontSize: 'clamp(12px, 1.1vw, 15px)', fontFamily: 'Inter', fontWeight: 600
+                        }}>Avanti →</button>
+                    </div>
+                </div>
+            );
+        };
+
+        ReactDOM.render(<App />, document.getElementById('root'));
+    </script>
+</body>
+</html>
